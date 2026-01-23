@@ -1,0 +1,1 @@
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount decimal(10,2) DEFAULT 0;

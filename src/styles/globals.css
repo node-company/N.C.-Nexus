@@ -1,0 +1,57 @@
+:root {
+  /* Premium Dark Theme Palette */
+  --hue-primary: 260; /* Deep Purple */
+  --hue-secondary: 180; /* Cyan */
+  --hue-accent: 320; /* Magenta */
+
+  --color-background: hsl(240, 10%, 4%);
+  --color-surface-100: hsl(240, 10%, 8%);
+  --color-surface-200: hsl(240, 10%, 12%);
+  --color-surface-glass: hsla(240, 10%, 12%, 0.5);
+  
+  --color-primary: hsl(var(--hue-primary), 70%, 60%);
+  --color-primary-glow: hsla(var(--hue-primary), 70%, 60%, 0.3);
+  
+  --color-secondary: hsl(var(--hue-secondary), 80%, 60%);
+  --color-accent: hsl(var(--hue-accent), 90%, 60%);
+
+  --color-text-main: hsl(0, 0%, 98%);
+  --color-text-muted: hsl(240, 5%, 65%);
+  
+  --font-main: 'Inter', sans-serif;
+  
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  
+  --shadow-glow: 0 0 40px var(--color-primary-glow);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-text-main);
+  font-family: var(--font-main);
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Glassmorphism Utility */
+.glass-panel {
+  background: var(--color-surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsla(0, 0%, 100%, 0.05);
+  box-shadow: var(--shadow-card);
+}
