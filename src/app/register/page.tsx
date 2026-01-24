@@ -45,8 +45,11 @@ export default function RegisterPage() {
 
             if (error) throw error;
 
+            const searchParams = new URLSearchParams(window.location.search);
+            const plan = searchParams.get("plan");
+
             alert("Cadastro realizado com sucesso! Você será redirecionado para o login.");
-            router.push("/login");
+            router.push(plan ? `/login?plan=${plan}` : "/login");
         } catch (err: any) {
             console.error("Erro no cadastro:", err);
             setError(err.message || "Ocorreu um erro ao criar a conta.");
