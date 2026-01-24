@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Box, CheckCircle2, LayoutDashboard, ShieldCheck, Users, Zap, TrendingUp, AlertTriangle } from "lucide-react";
@@ -723,17 +723,14 @@ function PricingCard({ title, price, period, features, highlight = false, badge,
             const response = await fetch("/api/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include", // Ensure cookies are sent (though normally default for same-origin)
                 body: JSON.stringify({
-                    priceId: title === 'Anual' ? 'price_1QjXXXX' : (title === 'Mensal' ? 'price_1QjYYYY' : 'price_1QjZZZZ'), // Placeholder IDs
+                    priceId: title === 'Anual' ? 'price_1SsDWcH9xysmTmT912xOY0o1' : (title === 'Mensal' ? 'price_1SsDWcH9xysmTmT92shFB4kd' : 'price_1SsDWcH9xysmTmT9OeNjbpFi'),
                     planName: title
                 })
             });
 
             if (!response.ok) {
-                if (response.status === 401) {
-                    window.location.href = "/register?plan=" + title; // Redirect to register if not logged in
-                    return;
-                }
                 throw new Error("Erro ao iniciar checkout");
             }
 
@@ -746,6 +743,14 @@ function PricingCard({ title, price, period, features, highlight = false, badge,
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        const plan = searchParams.get("checkout_plan");
+        if (plan === title) {
+            handleSubscribe();
+        }
+    }, [title]);
 
     return (
         <div style={{
