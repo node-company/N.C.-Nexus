@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CheckCircle2, Building2, Lock, ArrowRight } from "lucide-react";
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
     const [loading, setLoading] = useState(true);
     const [verifying, setVerifying] = useState(true);
     const [sessionData, setSessionData] = useState<any>(null);
@@ -124,6 +124,97 @@ export default function CheckoutSuccessPage() {
     }
 
     return (
+        <Card style={{
+            maxWidth: '500px',
+            width: '100%',
+            padding: '2.5rem',
+            backdropFilter: 'blur(20px)',
+            background: 'rgba(30, 41, 59, 0.7)',
+            border: '1px solid rgba(0, 255, 127, 0.2)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+        }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                <div style={{
+                    background: 'rgba(0, 255, 127, 0.1)',
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 1.5rem',
+                    color: '#00FF7F'
+                }}>
+                    <CheckCircle2 size={32} />
+                </div>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>
+                    Pagamento Confirmado!
+                </h1>
+                <p style={{ color: '#94a3b8' }}>
+                    Agora, finalize seu cadastro para acessar o <b>NC Nexus</b>.
+                </p>
+            </div>
+
+            <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>E-mail do Assinante</label>
+                    <div style={{ color: 'white', fontWeight: 600 }}>{sessionData.customer_email}</div>
+                    <input type="hidden" name="email" value={sessionData.customer_email} />
+                </div>
+
+                <Input
+                    label="Nome da Empresa"
+                    name="companyName"
+                    type="text"
+                    placeholder="Ex: Minha Loja Inc"
+                    required
+                    icon={<Building2 size={18} />}
+                    style={{ background: 'rgba(15, 23, 42, 0.5)' }}
+                />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <Input
+                        label="Senha de Acesso"
+                        name="password"
+                        type="password"
+                        placeholder="••••••••"
+                        required
+                        style={{ background: 'rgba(15, 23, 42, 0.5)' }}
+                    />
+                    <Input
+                        label="Confirmar Senha"
+                        name="confirmPassword"
+                        type="password"
+                        placeholder="••••••••"
+                        required
+                        style={{ background: 'rgba(15, 23, 42, 0.5)' }}
+                    />
+                </div>
+
+                {error && <div style={{ color: '#f87171', fontSize: '0.875rem', textAlign: 'center' }}>{error}</div>}
+
+                <Button
+                    type="submit"
+                    disabled={loading}
+                    style={{
+                        marginTop: '1rem',
+                        background: '#00FF7F',
+                        color: '#000',
+                        fontWeight: 700,
+                        border: 'none',
+                        height: '48px'
+                    }}
+                >
+                    {loading ? 'Criando conta...' : 'Finalizar e Acessar >>'}
+                </Button>
+            </form>
+        </Card>
+    )
+}
+
+export default function CheckoutSuccessPage() {
+    return (
         <main style={{
             minHeight: '100vh',
             display: 'flex',
@@ -132,92 +223,14 @@ export default function CheckoutSuccessPage() {
             padding: '2rem',
             background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
         }}>
-            <Card style={{
-                maxWidth: '500px',
-                width: '100%',
-                padding: '2.5rem',
-                backdropFilter: 'blur(20px)',
-                background: 'rgba(30, 41, 59, 0.7)',
-                border: '1px solid rgba(0, 255, 127, 0.2)',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-            }}>
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                    <div style={{
-                        background: 'rgba(0, 255, 127, 0.1)',
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 1.5rem',
-                        color: '#00FF7F'
-                    }}>
-                        <CheckCircle2 size={32} />
-                    </div>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>
-                        Pagamento Confirmado!
-                    </h1>
-                    <p style={{ color: '#94a3b8' }}>
-                        Agora, finalize seu cadastro para acessar o <b>NC Nexus</b>.
-                    </p>
+            <Suspense fallback={
+                <div className="flex flex-col items-center gap-4 text-white">
+                    <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p>Carregando...</p>
                 </div>
-
-                <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-
-                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>E-mail do Assinante</label>
-                        <div style={{ color: 'white', fontWeight: 600 }}>{sessionData.customer_email}</div>
-                        <input type="hidden" name="email" value={sessionData.customer_email} />
-                    </div>
-
-                    <Input
-                        label="Nome da Empresa"
-                        name="companyName"
-                        type="text"
-                        placeholder="Ex: Minha Loja Inc"
-                        required
-                        icon={<Building2 size={18} />}
-                        style={{ background: 'rgba(15, 23, 42, 0.5)' }}
-                    />
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <Input
-                            label="Senha de Acesso"
-                            name="password"
-                            type="password"
-                            placeholder="••••••••"
-                            required
-                            style={{ background: 'rgba(15, 23, 42, 0.5)' }}
-                        />
-                        <Input
-                            label="Confirmar Senha"
-                            name="confirmPassword"
-                            type="password"
-                            placeholder="••••••••"
-                            required
-                            style={{ background: 'rgba(15, 23, 42, 0.5)' }}
-                        />
-                    </div>
-
-                    {error && <div style={{ color: '#f87171', fontSize: '0.875rem', textAlign: 'center' }}>{error}</div>}
-
-                    <Button
-                        type="submit"
-                        disabled={loading}
-                        style={{
-                            marginTop: '1rem',
-                            background: '#00FF7F',
-                            color: '#000',
-                            fontWeight: 700,
-                            border: 'none',
-                            height: '48px'
-                        }}
-                    >
-                        {loading ? 'Criando conta...' : 'Finalizar e Acessar >>'}
-                    </Button>
-                </form>
-            </Card>
+            }>
+                <CheckoutSuccessContent />
+            </Suspense>
         </main>
-    )
+    );
 }
