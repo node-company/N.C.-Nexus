@@ -182,15 +182,6 @@ export default function LoginPage() {
                     paddingTop: '1.5rem'
                 }}>
                     <div style={{ textAlign: 'center' }}>
-                        <p style={{ fontSize: '0.9rem', color: '#94a3b8' }}>
-                            Deseja criar uma nova empresa?{' '}
-                            <Link href="/register" style={{ color: '#60a5fa', fontWeight: 600, textDecoration: 'none' }}>
-                                Começar agora
-                            </Link>
-                        </p>
-                    </div>
-
-                    <div style={{ textAlign: 'center' }}>
                         <Link
                             href="/employee/login"
                             style={{
