@@ -1,140 +1,223 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { CheckCircle, ArrowRight, User, Package, BarChart3, LayoutDashboard } from "lucide-react";
+import { CheckCircle2, Building2, Lock, ArrowRight } from "lucide-react";
 
-function CheckoutSuccessContent() {
-    const router = useRouter();
+export default function CheckoutSuccessPage() {
+    const [loading, setLoading] = useState(true);
+    const [verifying, setVerifying] = useState(true);
+    const [sessionData, setSessionData] = useState<any>(null);
+    const [error, setError] = useState<string | null>(null);
     const searchParams = useSearchParams();
-    const sessionId = searchParams.get("session_id");
-    const [timeLeft, setTimeLeft] = useState(10); // Auto-redirect countdown (optional)
+    const router = useRouter();
+    const supabase = createClient();
+    const sessionId = searchParams.get('session_id');
 
     useEffect(() => {
-        // Fire Purchase Pixel
-        // @ts-ignore
-        if (typeof window !== 'undefined' && window.fbq) {
-            // @ts-ignore
-            window.fbq('track', 'Purchase', { currency: "BRL", value: 0.00 }); // Value can be dynamic if passed
+        if (!sessionId) {
+            router.push('/');
+            return;
         }
-    }, []);
 
-    const handleGoDashboard = () => {
-        router.push("/dashboard");
+        // Verify Session Backend
+        const verifySession = async () => {
+            try {
+                const res = await fetch('/api/checkout/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+
+                if (!res.ok) throw new Error('Falha na validação do pagamento');
+
+                const data = await res.json();
+                if (data.status !== 'complete' && data.status !== 'paid') {
+                    throw new Error('Pagamento não confirmado');
+                }
+
+                setSessionData(data);
+            } catch (err: any) {
+                console.error(err);
+                setError(err.message || 'Erro ao verificar pagamento');
+            } finally {
+                setVerifying(false);
+                setLoading(false);
+            }
+        };
+
+        verifySession();
+    }, [sessionId, router]);
+
+    const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+
+        const formData = new FormData(e.currentTarget);
+        const password = formData.get("password") as string;
+        const confirmPassword = formData.get("confirmPassword") as string;
+        const companyName = formData.get("companyName") as string;
+
+        if (password !== confirmPassword) {
+            setError("As senhas não coincidem");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            // 1. Create Supabase Auth User
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: sessionData.customer_email,
+                password,
+                options: {
+                    data: {
+                        company_name: companyName,
+                        stripe_customer_id: sessionData.customer,
+                        subscription_status: 'active', // Initial status
+                        subscription_plan: sessionData.metadata?.planName || 'monthly'
+                    }
+                }
+            });
+
+            if (authError) throw authError;
+
+            // 2. We trust the webhook to eventually sync everything, but we set initial metadata above.
+            // Ideally call an API to force-sync or just let them in.
+
+            alert("Conta criada com sucesso!");
+            router.push("/dashboard"); // Direct to dashboard
+
+        } catch (err: any) {
+            console.error("Erro no cadastro:", err);
+            setError(err.message || "Erro ao criar conta.");
+        } finally {
+            setLoading(false);
+        }
     };
 
+    if (verifying) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                    <p>Verificando pagamento...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !sessionData) {
+        return (
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
+                <div className="bg-slate-900 p-8 rounded-xl border border-red-500/20 max-w-md text-center">
+                    <h1 className="text-xl font-bold text-red-500 mb-2">Algo deu errado</h1>
+                    <p className="text-slate-400 mb-4">{error}</p>
+                    <Button onClick={() => router.push('/')} variant="outline">Voltar para Início</Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div style={{
-            minHeight: "100vh",
-            background: "#111827",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "2rem",
-            color: "white",
-            textAlign: "center"
+        <main style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem',
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
         }}>
-            <div style={{
-                background: "rgba(255, 255, 255, 0.03)",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "24px",
-                padding: "3rem",
-                maxWidth: "600px",
-                width: "100%",
-                backdropFilter: "blur(12px)",
-                animation: "fadeIn 0.8s ease-out"
+            <Card style={{
+                maxWidth: '500px',
+                width: '100%',
+                padding: '2.5rem',
+                backdropFilter: 'blur(20px)',
+                background: 'rgba(30, 41, 59, 0.7)',
+                border: '1px solid rgba(0, 255, 127, 0.2)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
             }}>
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <div style={{
-                        background: 'rgba(16, 185, 129, 0.2)',
-                        padding: '1.5rem',
+                        background: 'rgba(0, 255, 127, 0.1)',
+                        width: '64px',
+                        height: '64px',
                         borderRadius: '50%',
-                        animation: 'pulse 2s infinite'
-                    }}>
-                        <CheckCircle size={64} color="#10b981" />
-                    </div>
-                </div>
-
-                <h1 style={{ fontSize: "2.5rem", fontWeight: 800, marginBottom: "1rem", background: "linear-gradient(to right, white, #10b981)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                    Assinatura Confirmada!
-                </h1>
-
-                <p style={{ fontSize: "1.125rem", color: "#d1d5db", marginBottom: "2.5rem" }}>
-                    Bem-vindo ao nível PRO. Sua conta foi ativada com sucesso e todos os recursos já estão liberados.
-                </p>
-
-                <div style={{ textAlign: 'left', marginBottom: '2.5rem' }}>
-                    <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: "1.5rem", color: "white" }}>
-                        Próximos Passos:
-                    </h3>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <StepItem
-                            icon={<User size={20} color="#3b82f6" />}
-                            title="Complete seu Perfil"
-                            desc="Configure os dados da sua empresa no menu Ajustes."
-                        />
-                        <StepItem
-                            icon={<Package size={20} color="#f59e0b" />}
-                            title="Cadastre Produtos"
-                            desc="Comece a popular seu estoque e serviços."
-                        />
-                        <StepItem
-                            icon={<BarChart3 size={20} color="#ec4899" />}
-                            title="Acompanhe Métricas"
-                            desc="Veja seus lucros crescerem no Dashboard."
-                        />
-                    </div>
-                </div>
-
-                <Button
-                    onClick={handleGoDashboard}
-                    style={{
-                        width: "100%",
-                        height: "56px",
-                        fontSize: "1.125rem",
-                        fontWeight: 700,
-                        background: "linear-gradient(90deg, #10b981, #059669)",
-                        boxShadow: "0 4px 14px rgba(16, 185, 129, 0.4)",
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '12px'
-                    }}
-                >
-                    <LayoutDashboard size={24} />
-                    Acessar Meu Painel Agora
-                </Button>
-            </div>
-        </div>
-    );
-}
+                        margin: '0 auto 1.5rem',
+                        color: '#00FF7F'
+                    }}>
+                        <CheckCircle2 size={32} />
+                    </div>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>
+                        Pagamento Confirmado!
+                    </h1>
+                    <p style={{ color: '#94a3b8' }}>
+                        Agora, finalize seu cadastro para acessar o <b>NC Nexus</b>.
+                    </p>
+                </div>
 
-export default function CheckoutSuccessPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <CheckoutSuccessContent />
-        </Suspense>
-    );
-}
+                <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-function StepItem({ icon, title, desc }: { icon: any, title: string, desc: string }) {
-    return (
-        <div style={{
-            display: 'flex',
-            gap: '1rem',
-            background: 'rgba(255,255,255,0.03)',
-            padding: '1rem',
-            borderRadius: '12px',
-            border: '1px solid rgba(255,255,255,0.05)'
-        }}>
-            <div style={{ marginTop: '2px' }}>{icon}</div>
-            <div>
-                <strong style={{ display: 'block', color: 'white', marginBottom: '0.25rem' }}>{title}</strong>
-                <span style={{ fontSize: '0.9rem', color: '#9ca3af' }}>{desc}</span>
-            </div>
-        </div>
-    );
+                    <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>E-mail do Assinante</label>
+                        <div style={{ color: 'white', fontWeight: 600 }}>{sessionData.customer_email}</div>
+                        <input type="hidden" name="email" value={sessionData.customer_email} />
+                    </div>
+
+                    <Input
+                        label="Nome da Empresa"
+                        name="companyName"
+                        type="text"
+                        placeholder="Ex: Minha Loja Inc"
+                        required
+                        icon={<Building2 size={18} />}
+                        style={{ background: 'rgba(15, 23, 42, 0.5)' }}
+                    />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <Input
+                            label="Senha de Acesso"
+                            name="password"
+                            type="password"
+                            placeholder="••••••••"
+                            required
+                            style={{ background: 'rgba(15, 23, 42, 0.5)' }}
+                        />
+                        <Input
+                            label="Confirmar Senha"
+                            name="confirmPassword"
+                            type="password"
+                            placeholder="••••••••"
+                            required
+                            style={{ background: 'rgba(15, 23, 42, 0.5)' }}
+                        />
+                    </div>
+
+                    {error && <div style={{ color: '#f87171', fontSize: '0.875rem', textAlign: 'center' }}>{error}</div>}
+
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        style={{
+                            marginTop: '1rem',
+                            background: '#00FF7F',
+                            color: '#000',
+                            fontWeight: 700,
+                            border: 'none',
+                            height: '48px'
+                        }}
+                    >
+                        {loading ? 'Criando conta...' : 'Finalizar e Acessar >>'}
+                    </Button>
+                </form>
+            </Card>
+        </main>
+    )
 }
