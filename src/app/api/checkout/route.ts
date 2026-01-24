@@ -5,18 +5,11 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(req: NextRequest) {
     try {
         const { priceId, planName } = await req.json();
-        const supabase = createClient();
 
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user || !user.email) {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
-
-        const customer = await getStripeCustomer(user.email, user.id, user.user_metadata.name || "Cliente");
+        // Guest Checkout: No user auth check needed here.
+        // We will create the user AFTER payment in /checkout/success
 
         const session = await stripe.checkout.sessions.create({
-            customer: customer.id,
             mode: 'subscription',
             payment_method_types: ['card'],
             line_items: [
@@ -25,11 +18,14 @@ export async function POST(req: NextRequest) {
                     quantity: 1,
                 },
             ],
+            // Request email collection in checkout
+            payment_method_collection: 'always',
+
             success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
             metadata: {
-                userId: user.id,
                 planName: planName
+                // userId is not known yet
             }
         });
 
