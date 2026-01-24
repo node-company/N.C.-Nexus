@@ -16,6 +16,8 @@ interface CompanySettings {
     address: string;
     logo_url: string;
     footer_text: string;
+    subscription_status?: string;
+    subscription_plan?: string;
 }
 
 export default function SettingsPage() {
@@ -148,6 +150,53 @@ export default function SettingsPage() {
         }
     };
 
+    const handleManageSubscription = async () => {
+        try {
+            const response = await fetch("/api/portal", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include"
+            });
+
+            if (!response.ok) throw new Error("Erro ao abrir portal");
+
+            const { url } = await response.json();
+            window.location.href = url;
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao redirecionar para o portal de assinatura.");
+        }
+    };
+
+    const handleSubscribe = async (planName: string, priceId: string) => {
+        try {
+            const response = await fetch("/api/checkout", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({
+                    priceId: priceId,
+                    planName: planName
+                })
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    alert("Erro de autenticação. Faça login novamente.");
+                    return;
+                }
+                throw new Error("Erro ao iniciar checkout");
+            }
+
+            const { url } = await response.json();
+            window.location.href = url;
+
+        } catch (error) {
+            console.error(error);
+            alert("Erro ao conectar com o pagamento.");
+        }
+    };
+
     if (loading) {
         return <div style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>Carregando configurações...</div>;
     }
@@ -228,6 +277,71 @@ export default function SettingsPage() {
                             <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>
                                 Este logo sairá nos recibos impressos e no cabeçalho.
                             </p>
+                        </div>
+                    </div>
+
+                    {/* Subscription */}
+                    <div style={{ paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ color: '#facc15' }}>★</span> Assinatura e Plano
+                        </h3>
+                        <div style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            padding: '1.5rem',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <div>
+                                <div style={{ fontSize: '0.9rem', color: '#9ca3af', marginBottom: '0.25rem' }}>Plano Atual</div>
+                                <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'white', textTransform: 'capitalize' }}>
+                                    {settings.subscription_plan || "Gratuito / Trial"}
+                                </div>
+                                <div style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    marginTop: '0.5rem',
+                                    fontSize: '0.85rem',
+                                    padding: '4px 12px',
+                                    borderRadius: '99px',
+                                    background: settings.subscription_status === 'active' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                                    color: settings.subscription_status === 'active' ? '#34d399' : '#f87171',
+                                    fontWeight: 600
+                                }}>
+                                    Status: {settings.subscription_status === 'active' ? 'Ativo' : (settings.subscription_status || 'Inativo')}
+                                </div>
+                            </div>
+                            {(settings.subscription_status === 'active' || settings.subscription_status === 'trialing') ? (
+                                <Button
+                                    onClick={handleManageSubscription}
+                                    style={{
+                                        background: 'white',
+                                        color: 'black',
+                                        fontWeight: 700,
+                                        border: 'none'
+                                    }}
+                                >
+                                    Gerenciar Assinatura
+                                </Button>
+                            ) : (
+                                <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <Button
+                                        onClick={() => handleSubscribe('Mensal', 'price_1QjYYYY')}
+                                        style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: 'white' }}
+                                    >
+                                        Mensal
+                                    </Button>
+                                    <Button
+                                        onClick={() => handleSubscribe('Anual', 'price_1QjXXXX')}
+                                        style={{ background: '#00FF7F', color: 'black', fontWeight: 700, border: 'none' }}
+                                    >
+                                        Anual
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     </div>
 
