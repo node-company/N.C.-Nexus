@@ -31,17 +31,34 @@ export default function DashboardLayout({
         // return; 
 
         // import supabase client (must use createClientComponentClient in real app or allow passed client)
-        // Here we rely on global or new client
         const { createClient } = require("@/lib/supabase/client");
         const supabase = createClient();
 
-        const { data: settings } = await supabase.from('company_settings').select('subscription_status').single();
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-        // Simple Check: If status is 'canceled' or 'past_due' (and not null/trialing/active)
-        // Just an example logic. You might want to allow 'trialing'.
-        if (settings && (settings.subscription_status === 'canceled' || settings.subscription_status === 'past_due')) {
-            // alert("Sua assinatura expirou. Renove para continuar.");
-            // router.push("/#pricing"); // Redirect to pricing or specific renewal page
+            const { data: settings } = await supabase
+                .from('company_settings')
+                .select('subscription_status')
+                .eq('user_id', user.id) // Ensure we filter by current user
+                .maybeSingle();
+
+            // Defines valid statuses
+            const validStatuses = ['active', 'trialing'];
+
+            // Block if settings is missing OR status is not valid
+            // Note: If you want to allow a grace period (e.g. 'past_due'), add it to validStatuses.
+            const currentStatus = settings?.subscription_status;
+
+            if (!currentStatus || !validStatuses.includes(currentStatus)) {
+                // Redirect to Pending Subscription Page
+                if (!window.location.pathname.includes('/subscription/pending')) {
+                    router.push("/subscription/pending");
+                }
+            }
+        } catch (error) {
+            console.error("Error checking subscription:", error);
         }
     };
 
