@@ -21,15 +21,17 @@ export async function POST(req: Request) {
             return new NextResponse("No customer ID found", { status: 404 });
         }
 
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
         const session = await stripe.billingPortal.sessions.create({
             customer: settings.stripe_customer_id,
-            return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings`,
+            return_url: `${baseUrl}/dashboard/settings`,
         });
 
         return NextResponse.json({ url: session.url });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("[PORTAL_ERROR]", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
     }
 }
