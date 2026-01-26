@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -219,7 +219,7 @@ function CheckoutForm({ planName, customerId }: { planName: string, customerId: 
     );
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
     const searchParams = useSearchParams();
     const planName = searchParams.get("plan");
     const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -417,5 +417,17 @@ export default function CheckoutPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={
+            <div style={{ minHeight: '100vh', background: '#0B1121', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                <Loader2 className="animate-spin" size={48} color="#00FF7F" />
+            </div>
+        }>
+            <CheckoutContent />
+        </Suspense>
     );
 }
