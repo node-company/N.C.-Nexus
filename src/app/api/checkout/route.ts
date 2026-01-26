@@ -6,33 +6,63 @@ export async function POST(req: NextRequest) {
     try {
         const { priceId, planName } = await req.json();
 
-        // Guest Checkout: No user auth check needed here.
-        // We will create the user AFTER payment in /checkout/success
-
-        const session = await stripe.checkout.sessions.create({
-            mode: 'subscription',
-            payment_method_types: ['card'],
-            line_items: [
-                {
-                    price: priceId,
-                    quantity: 1,
-                },
-            ],
-            // Request email collection in checkout
-            payment_method_collection: 'always',
-
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
-            metadata: {
-                planName: planName
-                // userId is not known yet
-            }
+        // 1. Create a Customer
+        const customer = await stripe.customers.create({
+            description: 'Guest Customer via Custom Checkout',
         });
 
-        return NextResponse.json({ url: session.url });
+        // Check price type
+        const price = await stripe.prices.retrieve(priceId);
 
-    } catch (error) {
+        let clientSecret = "";
+        let resourceId = "";
+
+        if (price.type === 'recurring') {
+            // SUBSCRIPTION FLOW
+            const subscription = await stripe.subscriptions.create({
+                customer: customer.id,
+                items: [{ price: priceId }],
+                payment_behavior: 'default_incomplete',
+                payment_settings: {
+                    save_default_payment_method: 'on_subscription',
+                    payment_method_types: ['card', 'boleto'],
+                },
+                expand: ['latest_invoice.payment_intent'],
+                metadata: { planName: planName },
+            });
+
+            // @ts-ignore
+            clientSecret = subscription.latest_invoice?.payment_intent?.client_secret;
+            resourceId = subscription.id;
+
+        } else {
+            // ONE-TIME PAYMENT FLOW
+            // Use automatic_payment_methods so only activated methods in Stripe Dashboard appear.
+            // This prevents "invalid payment method" errors if Pix is not enabled in the account.
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: price.unit_amount!,
+                currency: price.currency,
+                customer: customer.id,
+                automatic_payment_methods: { enabled: true },
+                metadata: { planName: planName },
+            });
+
+            clientSecret = paymentIntent.client_secret!;
+            resourceId = paymentIntent.id;
+        }
+
+        if (!clientSecret) {
+            throw new Error("Failed to generate payment intent");
+        }
+
+        return NextResponse.json({
+            clientSecret: clientSecret,
+            resourceId: resourceId,
+            customerId: customer.id
+        });
+
+    } catch (error: any) {
         console.error("[CHECKOUT_ERROR]", error);
-        return new NextResponse("Internal Error", { status: 500 });
+        return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
     }
 }
