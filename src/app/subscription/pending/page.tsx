@@ -11,9 +11,8 @@ export default function SubscriptionPendingPage() {
     const supabase = createClient();
 
     const handleManageSubscription = async () => {
-        // Redirecionar para a Landing Page (#precos) para o usuário tentar assinar novamente.
-        // Isso evita problemas com o Portal da Stripe para assinaturas incompletas.
-        router.push("/#precos");
+        // Redirecionar para o Checkout (Default: Anual)
+        router.push("/checkout?plan=Anual");
     };
 
     const handleLogout = async () => {
