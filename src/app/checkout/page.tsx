@@ -38,21 +38,7 @@ const PLANS = {
     }
 };
 
-// ... inside CheckoutContent component ...
 
-                            <h3 style={{ fontSize: '1.25rem', color: '#94a3b8', fontWeight: 500, marginBottom: '1rem' }}>Plano Selecionado</h3>
-                            
-                            <div style={{ marginBottom: '1.5rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                                    <span style={{ fontSize: '3rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>
-                                        {selectedPlan.monthlyPrice}
-                                    </span>
-                                    <span style={{ fontSize: '1.25rem', fontWeight: 500, color: '#94a3b8' }}>/mês</span>
-                                </div>
-                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem' }}>
-                                    {selectedPlan.billingText}
-                                </div>
-                            </div>
 
 function CheckoutForm({ planName, customerId }: { planName: string, customerId: string | null }) {
     const stripe = useStripe();
