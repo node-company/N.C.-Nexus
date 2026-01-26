@@ -17,13 +17,16 @@ export default function SubscriptionPendingPage() {
                 headers: { "Content-Type": "application/json" },
             });
 
-            if (!response.ok) throw new Error("Erro ao abrir portal");
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || "Erro ao abrir portal");
+            }
 
             const { url } = await response.json();
             window.location.href = url;
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            alert("Erro ao conectar com o portal de assinatura.");
+            alert(`Erro: ${error.message}`);
         }
     };
 
