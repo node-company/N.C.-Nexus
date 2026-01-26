@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(req: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+        console.log("[PORTAL_DEBUG] User:", user?.id, "Error:", authError);
 
         if (!user || !user.email) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
