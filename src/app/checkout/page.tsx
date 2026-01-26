@@ -382,7 +382,7 @@ function CheckoutContent() {
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                                    <span style={{ fontSize: '3rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>
+                                    <span style={{ fontSize: '3rem', fontWeight: 800, color: '#00FF7F', letterSpacing: '-0.02em' }}>
                                         {selectedPlan.monthlyPrice}
                                     </span>
                                     <span style={{ fontSize: '1.25rem', fontWeight: 500, color: '#94a3b8' }}>/mês</span>
