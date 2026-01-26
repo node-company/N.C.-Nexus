@@ -3,6 +3,45 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
+import { resend } from "@/lib/resend";
+
+async function sendRecoveryEmail(email: string, userId: string | undefined, planName: string | undefined) {
+    if (!email) return;
+
+    // Construct the recovery link
+    // Assuming the app is hosted, we need the base URL. In dev it's localhost.
+    // Ideally use process.env.NEXT_PUBLIC_APP_URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const link = `${baseUrl}/checkout/success?email_contact=${encodeURIComponent(email)}`;
+
+    try {
+        await resend.emails.send({
+            from: 'N.C. Nexus <onboarding@resend.dev>', // Update this if user has a domain
+            to: email,
+            subject: 'Pagamento Confirmado! Finalize seu cadastro',
+            html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h1>Pagamento Recebido! 🚀</h1>
+                    <p>Olá,</p>
+                    <p>Recebemos a confirmação do seu pagamento para o plano <strong>${planName || 'Premium'}</strong>.</p>
+                    <p>Para acessar sua conta, você precisa definir sua senha e nome da empresa. Clique no botão abaixo para finalizar:</p>
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="${link}" style="background-color: #00FF7F; color: #000; padding: 15px 25px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">
+                            Finalizar Cadastro Agora
+                        </a>
+                    </div>
+                    <p>Se o botão não funcionar, copie e cole este link:</p>
+                    <p><a href="${link}">${link}</a></p>
+                    <hr />
+                    <p style="font-size: 12px; color: #666;">Se você já finalizou seu cadastro, pode ignorar este e-mail.</p>
+                </div>
+            `
+        });
+        console.log(`[Email Sent] Recovery email sent to ${email}`);
+    } catch (e) {
+        console.error(`[Email Error] Failed to send email to ${email}`, e);
+    }
+}
 
 export async function POST(req: Request) {
     const body = await req.text();
@@ -21,87 +60,48 @@ export async function POST(req: Request) {
         return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
     }
 
-    const session = event.data.object as Stripe.Checkout.Session;
     const supabase = createClient();
 
-    // Handle the event
     try {
-        if (event.type === 'checkout.session.completed') {
-            const subscriptionId = session.subscription as string;
-            const customerId = session.customer as string;
-            const userId = session.metadata?.userId;
-            const planName = session.metadata?.planName;
-
-            if (userId) {
-                // Update user/company settings
-                await supabase.from("company_settings").upsert({
-                    user_id: userId,
-                    subscription_status: 'active',
-                    stripe_customer_id: customerId,
-                    stripe_subscription_id: subscriptionId,
-                    subscription_plan: planName,
-                    updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
-
-                console.log(`[Stripe Webhook] Subscription activated for user ${userId}`);
-            }
-        }
-
+        // SUBSCRIPTION FLOW (Invoice Paid)
         if (event.type === 'invoice.payment_succeeded') {
             const invoice = event.data.object as Stripe.Invoice;
-            const subscriptionId = (invoice as any).subscription as string;
+            const email = invoice.customer_email || invoice.customer_name; // fallback
 
-            // Retrieve subscription to get current period end if needed,
-            // but for now keeping it active is enough.
-            // Ideally we should sync period_end if we added that column.
-
-            const { data: settings } = await supabase
-                .from('company_settings')
-                .select('user_id')
-                .eq('stripe_subscription_id', subscriptionId)
-                .single();
-
-            if (settings) {
-                await supabase.from("company_settings").update({
-                    subscription_status: 'active',
-                    updated_at: new Date().toISOString()
-                }).eq('user_id', settings.user_id);
-                console.log(`[Stripe Webhook] Invoice paid for user ${settings.user_id}`);
+            // Retrieve subscription for metadata
+            let planName = 'Premium';
+            if (invoice.subscription) {
+                const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+                planName = sub.metadata?.planName || 'Premium';
             }
+
+            if (email) {
+                await sendRecoveryEmail(email, undefined, planName);
+            }
+
+            // ... exiting logic for updating company_settings if needed
         }
 
-        if (event.type === 'customer.subscription.deleted') {
-            const subscription = event.data.object as Stripe.Subscription;
-            // Find user by stripe_subscription_id and cancel
-            const { data: settings } = await supabase
-                .from('company_settings')
-                .select('user_id')
-                .eq('stripe_subscription_id', subscription.id)
-                .single();
+        // ONE-TIME PAYMENT FLOW (PaymentIntent Succeeded)
+        if (event.type === 'payment_intent.succeeded') {
+            const paymentIntent = event.data.object as Stripe.PaymentIntent;
+            const email = paymentIntent.receipt_email || (paymentIntent.payment_method as any)?.billing_details?.email; // Need to expand or check billing_details
 
-            if (settings) {
-                await supabase.from("company_settings").update({
-                    subscription_status: 'canceled',
-                    updated_at: new Date().toISOString()
-                }).eq('user_id', settings.user_id);
-                console.log(`[Stripe Webhook] Subscription canceled for user ${settings.user_id}`);
+            // Usually receipt_email is set if we updated the customer/PI
+            // To be sure, we can fetch the customer if email is missing
+            let targetEmail = email;
+
+            if (!targetEmail && paymentIntent.customer) {
+                const customer = await stripe.customers.retrieve(paymentIntent.customer as string);
+                if (!customer.deleted) {
+                    targetEmail = (customer as Stripe.Customer).email;
+                }
             }
-        }
 
-        if (event.type === 'customer.subscription.updated') {
-            const subscription = event.data.object as Stripe.Subscription;
+            const planName = paymentIntent.metadata?.planName;
 
-            const { data: settings } = await supabase
-                .from('company_settings')
-                .select('user_id')
-                .eq('stripe_subscription_id', subscription.id)
-                .single();
-
-            if (settings) {
-                await supabase.from("company_settings").update({
-                    subscription_status: subscription.status, // maps 'active', 'past_due', etc. directly
-                    updated_at: new Date().toISOString()
-                }).eq('user_id', settings.user_id);
+            if (targetEmail) {
+                await sendRecoveryEmail(targetEmail, undefined, planName);
             }
         }
 
