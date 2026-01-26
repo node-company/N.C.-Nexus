@@ -390,6 +390,9 @@ function CheckoutContent() {
                                 <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem' }}>
                                     {selectedPlan.billingText}
                                 </div>
+                                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#00FF7F', fontWeight: 600, background: 'rgba(0, 255, 127, 0.1)', padding: '0.25rem 0.75rem', borderRadius: '4px', width: 'fit-content' }}>
+                                    Só começa a pagar após 7 dias
+                                </div>
                             </div>
 
                             <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.1)', marginBottom: '1.5rem' }} />
