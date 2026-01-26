@@ -11,23 +11,9 @@ export default function SubscriptionPendingPage() {
     const supabase = createClient();
 
     const handleManageSubscription = async () => {
-        try {
-            const response = await fetch("/api/portal", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-            });
-
-            if (!response.ok) {
-                const data = await response.json().catch(() => ({}));
-                throw new Error(data.error || "Erro ao abrir portal");
-            }
-
-            const { url } = await response.json();
-            window.location.href = url;
-        } catch (error: any) {
-            console.error(error);
-            alert(`Erro: ${error.message}`);
-        }
+        // Redirecionar para a Landing Page (#precos) para o usuário tentar assinar novamente.
+        // Isso evita problemas com o Portal da Stripe para assinaturas incompletas.
+        router.push("/#precos");
     };
 
     const handleLogout = async () => {
