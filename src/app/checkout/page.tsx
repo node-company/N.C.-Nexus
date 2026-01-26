@@ -16,22 +16,43 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const PLANS = {
     'Mensal': {
-        price: 'R$ 47',
-        period: '/mês',
-        features: ['Acesso Completo ao Sistema', 'Suporte Prioritário', 'Sem Fidelidade', 'Cancelamento a qualquer momento']
+        monthlyPrice: 'R$ 47,00',
+        billingText: 'Cobrado todo mês',
+        priceId: 'price_1StdJlH9xysmTmT9ySfwMjOq',
+        features: ['Acesso Completo ao Sistema', 'Suporte Prioritário', 'Sem Fidelidade', 'Cancelamento a qualquer momento'],
+        highlight: false
     },
     'Anual': {
-        price: 'R$ 297',
-        period: '/ano',
+        monthlyPrice: 'R$ 24,75',
+        billingText: 'R$ 297,00 cobrado anualmente',
+        priceId: 'price_1StdIeH9xysmTmT9d0o3PDCS',
         features: ['Acesso Completo ao Sistema', 'Economia de 47%', 'Suporte VIP via WhatsApp', 'Treinamento Exclusivo para Equipe'],
         highlight: true
     },
     'Semestral': {
-        price: 'R$ 197',
-        period: '/semestre',
-        features: ['Acesso Completo ao Sistema', 'Economia de 30%', 'Suporte Prioritário']
+        monthlyPrice: 'R$ 32,83',
+        billingText: 'R$ 197,00 cobrado semestralmente',
+        priceId: 'price_1StdJVH9xysmTmT95lE4FKR4',
+        features: ['Acesso Completo ao Sistema', 'Economia de 30%', 'Suporte Prioritário'],
+        highlight: false
     }
 };
+
+// ... inside CheckoutContent component ...
+
+                            <h3 style={{ fontSize: '1.25rem', color: '#94a3b8', fontWeight: 500, marginBottom: '1rem' }}>Plano Selecionado</h3>
+                            
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                                    <span style={{ fontSize: '3rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>
+                                        {selectedPlan.monthlyPrice}
+                                    </span>
+                                    <span style={{ fontSize: '1.25rem', fontWeight: 500, color: '#94a3b8' }}>/mês</span>
+                                </div>
+                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                    {selectedPlan.billingText}
+                                </div>
+                            </div>
 
 function CheckoutForm({ planName, customerId }: { planName: string, customerId: string | null }) {
     const stripe = useStripe();
@@ -190,7 +211,8 @@ function CheckoutForm({ planName, customerId }: { planName: string, customerId: 
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.5rem'
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 6px -1px rgba(0, 255, 127, 0.2)'
                     }}
                 >
                     {isLoading ? (
@@ -199,16 +221,19 @@ function CheckoutForm({ planName, customerId }: { planName: string, customerId: 
                             Processando...
                         </>
                     ) : (
-                        `Assinar Plano ${planName}`
+                        `Iniciar Teste Grátis de 7 Dias`
                     )}
                 </button>
             </div>
 
-            {message && (
-                <div style={{ marginTop: '1rem', color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)', padding: '1rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-                    {message}
-                </div>
-            )}
+            <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.85rem', color: '#94a3b8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>
+                    <strong>Cobrança zero hoje.</strong> Seu cartão só será debitado após o período de teste.
+                </p>
+                <p style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+                    Cancele a qualquer momento nas configurações da conta para evitar a cobrança.
+                </p>
+            </div>
 
             <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                 <p style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
@@ -367,13 +392,18 @@ function CheckoutContent() {
                                 </div>
                             )}
 
-                            <h3 style={{ fontSize: '1.25rem', color: '#94a3b8', fontWeight: 500, marginBottom: '0.5rem' }}>Plano Selecionado</h3>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                                <span style={{ fontSize: '2.25rem', fontWeight: 700, color: 'white' }}>{planName}</span>
-                                <span style={{ fontSize: '1.5rem', fontWeight: 700, color: selectedPlan.highlight ? '#00FF7F' : '#cbd5e1' }}>
-                                    {selectedPlan.price}
-                                </span>
-                                <span style={{ color: '#64748b' }}>{selectedPlan.period}</span>
+                            <h3 style={{ fontSize: '1.25rem', color: '#94a3b8', fontWeight: 500, marginBottom: '1rem' }}>Plano Selecionado</h3>
+
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                                    <span style={{ fontSize: '3rem', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>
+                                        {selectedPlan.monthlyPrice}
+                                    </span>
+                                    <span style={{ fontSize: '1.25rem', fontWeight: 500, color: '#94a3b8' }}>/mês</span>
+                                </div>
+                                <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                    {selectedPlan.billingText}
+                                </div>
                             </div>
 
                             <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.1)', marginBottom: '1.5rem' }} />
