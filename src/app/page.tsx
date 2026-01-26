@@ -796,8 +796,11 @@ function PricingCard({ title, price, period, features, highlight = false, badge,
                 }}
                 className={highlight ? 'hover:scale-105 transition-transform' : 'hover:bg-white/20'}
             >
-                {loading ? 'Processando...' : 'ASSINAR AGORA'}
+                {loading ? 'Processando...' : 'TESTAR GRÁTIS AGORA'}
             </Button>
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#64748b', marginTop: '0.75rem' }}>
+                Cobrança só inicia após 7 dias de teste.
+            </p>
         </div>
     )
 }
