@@ -13,31 +13,44 @@ function CheckoutSuccessContent() {
     const [verifying, setVerifying] = useState(true);
     const [sessionData, setSessionData] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [formError, setFormError] = useState<string | null>(null);
     const searchParams = useSearchParams();
     const router = useRouter();
     const supabase = createClient();
+
+    // Support both new (PaymentIntent) and old (Session) flows
     const sessionId = searchParams.get('session_id');
+    const paymentIntentId = searchParams.get('payment_intent');
+    const emailContact = searchParams.get('email_contact');
 
     useEffect(() => {
-        if (!sessionId) {
+        if (!sessionId && !paymentIntentId) {
             router.push('/');
             return;
         }
 
         // Verify Session Backend
-        const verifySession = async () => {
+        const verifyPayment = async () => {
             try {
                 const res = await fetch('/api/checkout/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId })
+                    body: JSON.stringify({
+                        sessionId,
+                        paymentIntentId
+                    })
                 });
 
                 if (!res.ok) throw new Error('Falha na validação do pagamento');
 
                 const data = await res.json();
-                if (data.status !== 'complete' && data.status !== 'paid') {
-                    throw new Error('Pagamento não confirmado');
+
+                // Allow 'processing' status for async payments (like slips/boletos if used someday)
+                if (data.status !== 'complete' && data.status !== 'paid' && data.status !== 'succeeded') {
+                    // Check if it's strictly failed
+                    if (data.status === 'requires_payment_method') {
+                        throw new Error('Pagamento não concluído. Tente novamente.');
+                    }
                 }
 
                 setSessionData(data);
@@ -50,21 +63,30 @@ function CheckoutSuccessContent() {
             }
         };
 
-        verifySession();
-    }, [sessionId, router]);
+        verifyPayment();
+    }, [sessionId, paymentIntentId, router]);
 
     const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoading(true);
-        setError(null);
+        setFormError(null);
 
         const formData = new FormData(e.currentTarget);
         const password = formData.get("password") as string;
         const confirmPassword = formData.get("confirmPassword") as string;
         const companyName = formData.get("companyName") as string;
 
+        // Use email from URL param as primary fallback if backend didn't return one (common in guest payment intents without strict customer expansion)
+        const finalEmail = sessionData?.customer_email || emailContact;
+
+        if (!finalEmail) {
+            setFormError("E-mail não encontrado. Entre em contato com o suporte.");
+            setLoading(false);
+            return;
+        }
+
         if (password !== confirmPassword) {
-            setError("As senhas não coincidem");
+            setFormError("As senhas não coincidem");
             setLoading(false);
             return;
         }
@@ -72,7 +94,7 @@ function CheckoutSuccessContent() {
         try {
             // 1. Create Supabase Auth User
             const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: sessionData.customer_email,
+                email: finalEmail,
                 password,
                 options: {
                     data: {
@@ -84,17 +106,25 @@ function CheckoutSuccessContent() {
                 }
             });
 
-            if (authError) throw authError;
+            if (authError) {
+                console.error("Supabase Auth Error:", authError);
+                if (authError.message === "User already registered" || authError.status === 422 || authError.message.includes("already registered")) {
+                    throw new Error("Este e-mail já possui uma conta. Por favor, faça login em vez de cadastrar.");
+                }
+                throw authError;
+            }
 
-            // 2. We trust the webhook to eventually sync everything, but we set initial metadata above.
-            // Ideally call an API to force-sync or just let them in.
+            // Check for Supabase "fake success" (security feature which returns success for existing emails but empty identities)
+            if (authData.user && authData.user.identities && authData.user.identities.length === 0) {
+                throw new Error("Este e-mail já está cadastrado. Por favor, acesse a tela de login.");
+            }
 
             alert("Conta criada com sucesso!");
             router.push("/dashboard"); // Direct to dashboard
 
         } catch (err: any) {
             console.error("Erro no cadastro:", err);
-            setError(err.message || "Erro ao criar conta.");
+            setFormError(err.message || "Erro ao criar conta.");
         } finally {
             setLoading(false);
         }
@@ -159,8 +189,8 @@ function CheckoutSuccessContent() {
 
                 <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
                     <label style={{ fontSize: '0.8rem', color: '#64748b', display: 'block', marginBottom: '0.25rem' }}>E-mail do Assinante</label>
-                    <div style={{ color: 'white', fontWeight: 600 }}>{sessionData.customer_email}</div>
-                    <input type="hidden" name="email" value={sessionData.customer_email} />
+                    <div style={{ color: 'white', fontWeight: 600 }}>{sessionData?.customer_email || searchParams.get('email_contact')}</div>
+                    <input type="hidden" name="email" value={sessionData?.customer_email || searchParams.get('email_contact') || ''} />
                 </div>
 
                 <Input
@@ -192,7 +222,7 @@ function CheckoutSuccessContent() {
                     />
                 </div>
 
-                {error && <div style={{ color: '#f87171', fontSize: '0.875rem', textAlign: 'center' }}>{error}</div>}
+                {formError && <div style={{ color: '#f87171', fontSize: '0.875rem', textAlign: 'center' }}>{formError}</div>}
 
                 <Button
                     type="submit"
@@ -208,6 +238,23 @@ function CheckoutSuccessContent() {
                 >
                     {loading ? 'Criando conta...' : 'Finalizar e Acessar >>'}
                 </Button>
+
+                <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                    <button
+                        type="button"
+                        onClick={() => router.push('/')}
+                        style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#64748b',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            textDecoration: 'underline'
+                        }}
+                    >
+                        Voltar para o Início
+                    </button>
+                </div>
             </form>
         </Card>
     )
