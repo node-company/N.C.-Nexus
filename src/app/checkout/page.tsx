@@ -233,9 +233,10 @@ function CheckoutContent() {
 
         const getPriceId = (name: string) => {
             switch (name) {
-                case 'Anual': return 'price_1StdIeH9xysmTmT9d0o3PDCS';
-                case 'Mensal': return 'price_1StdJlH9xysmTmT9ySfwMjOq';
-                case 'Semestral': return 'price_1StdJVH9xysmTmT95lE4FKR4';
+                // Use Environment Variables for Price IDs (Prod/Test agnostic)
+                case 'Anual': return process.env.NEXT_PUBLIC_PRICE_ID_ANNUAL || 'price_1StdIeH9xysmTmT9d0o3PDCS';
+                case 'Mensal': return process.env.NEXT_PUBLIC_PRICE_ID_MONTHLY || 'price_1StdJlH9xysmTmT9ySfwMjOq';
+                case 'Semestral': return process.env.NEXT_PUBLIC_PRICE_ID_SEMIANNUAL || 'price_1StdJVH9xysmTmT95lE4FKR4';
                 default: return null;
             }
         }
