@@ -17,14 +17,16 @@ export async function POST(req: Request) {
             .eq('user_id', user.id)
             .single();
 
-        if (!settings?.stripe_customer_id) {
-            return NextResponse.json({ error: "No customer ID found in settings" }, { status: 404 });
+        if (!settings?.stripe_customer_id && !user.user_metadata?.stripe_customer_id) {
+            return NextResponse.json({ error: "No customer ID found in settings or metadata" }, { status: 404 });
         }
+
+        const customerId = settings?.stripe_customer_id || user.user_metadata?.stripe_customer_id;
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
         const session = await stripe.billingPortal.sessions.create({
-            customer: settings.stripe_customer_id,
+            customer: customerId,
             return_url: `${baseUrl}/dashboard/settings`,
         });
 
