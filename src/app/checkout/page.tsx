@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, FormEvent, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import {
     Elements,
@@ -220,13 +220,23 @@ function CheckoutForm({ planName, customerId }: { planName: string, customerId: 
 }
 
 function CheckoutContent() {
+    const router = useRouter(); // Import useRouter
     const searchParams = useSearchParams();
-    const planName = searchParams.get("plan");
+    const planName = searchParams.get("plan") || "Anual"; // Default to Anual if missing
+
+    // Derived state for local updates if needed, but router.push is better for deep linking
+
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [customerId, setCustomerId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    const selectedPlan = planName && PLANS[planName as keyof typeof PLANS] ? PLANS[planName as keyof typeof PLANS] : null;
+    const selectedPlan = PLANS[planName as keyof typeof PLANS] || PLANS['Anual'];
+
+    // Function to handle plan switch
+    const handlePlanChange = (newPlan: string) => {
+        setClientSecret(null); // Reset secret to force reload
+        router.replace(`/checkout?plan=${newPlan}`, { scroll: false });
+    };
 
     useEffect(() => {
         if (!planName) return;
@@ -237,7 +247,7 @@ function CheckoutContent() {
                 case 'Anual': return process.env.NEXT_PUBLIC_PRICE_ID_ANNUAL || 'price_1StdIeH9xysmTmT9d0o3PDCS';
                 case 'Mensal': return process.env.NEXT_PUBLIC_PRICE_ID_MONTHLY || 'price_1StdJlH9xysmTmT9ySfwMjOq';
                 case 'Semestral': return process.env.NEXT_PUBLIC_PRICE_ID_SEMIANNUAL || 'price_1StdJVH9xysmTmT95lE4FKR4';
-                default: return null;
+                default: return process.env.NEXT_PUBLIC_PRICE_ID_ANNUAL || 'price_1StdIeH9xysmTmT9d0o3PDCS'; // Default fallback
             }
         }
 
@@ -248,7 +258,7 @@ function CheckoutContent() {
             return;
         }
 
-        console.log("Criando assinatura para:", planName);
+        // console.log("Criando assinatura para:", planName);
 
         fetch("/api/checkout", {
             method: "POST",
@@ -275,16 +285,8 @@ function CheckoutContent() {
             });
     }, [planName]);
 
-    if (!planName || !selectedPlan) {
-        return (
-            <div style={{ background: '#0f172a', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'white', fontFamily: 'var(--font-main)' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Plano não encontrado</h1>
-                <Link href="/" style={{ color: '#00FF7F', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <ArrowLeft size={20} /> Voltar para a página inicial
-                </Link>
-            </div>
-        );
-    }
+    // If param is invalid, we default to Anual effectively via selectedPlan logic, but URL might look weird.
+    // Ideally we correct the URL.
 
     return (
         <div style={{ background: '#0B1121', minHeight: '100vh', color: 'white', fontFamily: 'var(--font-main)', position: 'relative', overflowX: 'hidden' }}>
@@ -311,15 +313,42 @@ function CheckoutContent() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '4rem', alignItems: 'start' }}>
 
-                    {/* Left Column: Plan Summary (SAME AS BEFORE) */}
+                    {/* Left Column: Plan Summary */}
                     <div style={{ animation: 'fadeInLeft 0.7s ease-out' }}>
                         <div style={{ marginBottom: '2rem' }}>
                             <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '0.5rem', lineHeight: 1.1 }}>
                                 Finalize sua <span style={{ color: '#00FF7F' }}>Assinatura</span>
                             </h1>
                             <p style={{ fontSize: '1.2rem', color: '#94a3b8' }}>
-                                Você está a um passo de transformar a gestão da sua empresa.
+                                Escolha o plano ideal para o seu negócio.
                             </p>
+                        </div>
+
+                        {/* Plan Switcher */}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', background: '#1e293b', padding: '0.5rem', borderRadius: '0.75rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            {Object.keys(PLANS).map((p) => {
+                                const isActive = planName === p;
+                                return (
+                                    <button
+                                        key={p}
+                                        onClick={() => handlePlanChange(p)}
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.75rem',
+                                            borderRadius: '0.5rem',
+                                            border: 'none',
+                                            background: isActive ? '#00FF7F' : 'transparent',
+                                            color: isActive ? '#020617' : '#94a3b8',
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            fontSize: '0.9rem'
+                                        }}
+                                    >
+                                        {p}
+                                    </button>
+                                )
+                            })}
                         </div>
 
                         <div style={{
@@ -328,8 +357,10 @@ function CheckoutContent() {
                             padding: '2rem',
                             border: selectedPlan.highlight ? '1px solid rgba(0, 255, 127, 0.3)' : '1px solid rgba(255,255,255,0.05)',
                             position: 'relative',
-                            boxShadow: selectedPlan.highlight ? '0 0 40px -10px rgba(0,255,127,0.15)' : 'none'
+                            boxShadow: selectedPlan.highlight ? '0 0 40px -10px rgba(0,255,127,0.15)' : 'none',
+                            transition: 'all 0.3s ease'
                         }}>
+                            {/* ... (rest of the card content stays the same but using selectedPlan) */}
                             {selectedPlan.highlight && (
                                 <div style={{ position: 'absolute', top: 0, right: 0, background: '#00FF7F', color: 'black', fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.75rem', borderRadius: '0 24px 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                     Melhor Escolha
@@ -366,14 +397,15 @@ function CheckoutContent() {
                                 </div>
                             </div>
                         </div>
-
+                        {/* ... footer ... */}
                         <div style={{ marginTop: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: 0.6, filter: 'grayscale(1)', transition: 'all 0.3s' }}>
                             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Powered by</span>
                             <div style={{ height: '20px', padding: '0 8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontFamily: 'serif', fontStyle: 'italic', fontSize: '0.8rem' }}>Stripe</div>
                         </div>
+
                     </div>
 
-                    {/* Right Column: Checkout Form (UPDATED) */}
+                    {/* Right Column: Checkout Form */}
                     <div style={{
                         background: '#1e293b',
                         borderRadius: '24px',
@@ -382,6 +414,7 @@ function CheckoutContent() {
                         overflow: 'hidden',
                         animation: 'fadeInRight 0.7s ease-out 0.2s backwards'
                     }}>
+                        {/* ... existing right column content ... */}
                         {error ? (
                             <div style={{ padding: '3rem', textAlign: 'center', color: '#f87171', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                 <div style={{ width: '64px', height: '64px', background: 'rgba(248, 113, 113, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
@@ -414,7 +447,6 @@ function CheckoutContent() {
                             </div>
                         )}
                     </div>
-
                 </div>
             </div>
         </div>
