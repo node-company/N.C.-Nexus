@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, BarChart3, Box, CheckCircle2, LayoutDashboard, ShieldCheck, Users, Zap, TrendingUp, AlertTriangle } from "lucide-react";
 
 export default function LandingPage() {
@@ -708,40 +709,19 @@ function StepCard({ number, title, description }: { number: string, title: strin
 }
 
 function PricingCard({ title, price, period, features, highlight = false, badge, subtitle }: { title: string, price: string, period: string, features: string[], highlight?: boolean, badge?: string, subtitle?: string }) {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
 
-    const handleSubscribe = async () => {
+    const handleSubscribe = () => {
         setLoading(true);
-        try {
-            // Pixel: Initiate Checkout
+        // Pixel: Initiate Checkout
+        // @ts-ignore
+        if (typeof window !== 'undefined' && window.fbq) {
             // @ts-ignore
-            if (typeof window !== 'undefined' && window.fbq) {
-                // @ts-ignore
-                window.fbq('track', 'InitiateCheckout');
-            }
-
-            const response = await fetch("/api/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include", // Ensure cookies are sent (though normally default for same-origin)
-                body: JSON.stringify({
-                    priceId: title === 'Anual' ? 'price_1SsDWcH9xysmTmT912xOY0o1' : (title === 'Mensal' ? 'price_1SsDWcH9xysmTmT92shFB4kd' : 'price_1SsDWcH9xysmTmT9OeNjbpFi'),
-                    planName: title
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error("Erro ao iniciar checkout");
-            }
-
-            const { url } = await response.json();
-            window.location.href = url;
-
-        } catch (error) {
-            console.error(error);
-            alert("Erro ao conectar com o pagamento. Tente novamente.");
-            setLoading(false);
+            window.fbq('track', 'InitiateCheckout');
         }
+
+        router.push(`/checkout?plan=${title}`);
     };
 
     useEffect(() => {
