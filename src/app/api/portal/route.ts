@@ -8,7 +8,7 @@ export async function POST(req: Request) {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user || !user.email) {
-            return new NextResponse("Unauthorized", { status: 401 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         const { data: settings } = await supabase
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
             .single();
 
         if (!settings?.stripe_customer_id) {
-            return new NextResponse("No customer ID found", { status: 404 });
+            return NextResponse.json({ error: "No customer ID found in settings" }, { status: 404 });
         }
 
         const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
