@@ -322,12 +322,12 @@ function CheckoutContent() {
                     </div>
                 </header>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '4rem', alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '4rem', alignItems: 'start' }}>
 
                     {/* Left Column: Plan Summary */}
                     <div style={{ animation: 'fadeInLeft 0.7s ease-out' }}>
                         <div style={{ marginBottom: '2rem' }}>
-                            <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '0.5rem', lineHeight: 1.1 }}>
+                            <h1 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: 900, marginBottom: '0.5rem', lineHeight: 1.1 }}>
                                 Finalize sua <span style={{ color: '#00FF7F' }}>Assinatura</span>
                             </h1>
                             <p style={{ fontSize: '1.2rem', color: '#94a3b8' }}>
@@ -382,7 +382,7 @@ function CheckoutContent() {
 
                             <div style={{ marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                                    <span style={{ fontSize: '3rem', fontWeight: 800, color: '#00FF7F', letterSpacing: '-0.02em' }}>
+                                    <span style={{ fontSize: 'clamp(2.5rem, 5vw, 3rem)', fontWeight: 800, color: '#00FF7F', letterSpacing: '-0.02em' }}>
                                         {selectedPlan.monthlyPrice}
                                     </span>
                                     <span style={{ fontSize: '1.25rem', fontWeight: 500, color: '#94a3b8' }}>/mês</span>
