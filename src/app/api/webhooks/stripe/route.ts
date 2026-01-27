@@ -5,14 +5,21 @@ import { stripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { resend } from "@/lib/resend";
 
-async function sendRecoveryEmail(email: string, userId: string | undefined, planName: string | undefined) {
+async function sendRecoveryEmail(email: string, userId: string | undefined, planName: string | undefined, paymentIntentId: string | undefined) {
     if (!email) return;
 
     // Construct the recovery link
     // Assuming the app is hosted, we need the base URL. In dev it's localhost.
     // Ideally use process.env.NEXT_PUBLIC_APP_URL
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
-    const link = `${baseUrl}/checkout/success?email_contact=${encodeURIComponent(email)}`;
+
+    // Check if we have a valid payment ID to allow verification on the page
+    let queryParams = `email_contact=${encodeURIComponent(email)}`;
+    if (paymentIntentId) {
+        queryParams += `&payment_intent=${paymentIntentId}`;
+    }
+
+    const link = `${baseUrl}/checkout/success?${queryParams}`;
 
     try {
         await resend.emails.send({
@@ -65,7 +72,7 @@ export async function POST(req: Request) {
     try {
         // SUBSCRIPTION FLOW (Invoice Paid)
         if (event.type === 'invoice.payment_succeeded') {
-            const invoice = event.data.object as Stripe.Invoice;
+            const invoice = event.data.object as any; // Cast to any to avoid strict typing issues with subscription/customer_email
             const email = invoice.customer_email || invoice.customer_name; // fallback
 
             // Retrieve subscription for metadata
@@ -75,8 +82,12 @@ export async function POST(req: Request) {
                 planName = sub.metadata?.planName || 'Premium';
             }
 
+            const paymentIntentId = typeof invoice.payment_intent === 'string'
+                ? invoice.payment_intent
+                : (invoice.payment_intent as any)?.id;
+
             if (email) {
-                await sendRecoveryEmail(email, undefined, planName);
+                await sendRecoveryEmail(email, undefined, planName, paymentIntentId);
             }
 
             // ... exiting logic for updating company_settings if needed
@@ -101,7 +112,7 @@ export async function POST(req: Request) {
             const planName = paymentIntent.metadata?.planName;
 
             if (targetEmail) {
-                await sendRecoveryEmail(targetEmail, undefined, planName);
+                await sendRecoveryEmail(targetEmail, undefined, planName, paymentIntent.id);
             }
         }
 
