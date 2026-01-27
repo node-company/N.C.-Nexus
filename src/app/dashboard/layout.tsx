@@ -4,7 +4,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function DashboardLayout({
@@ -14,8 +14,10 @@ export default function DashboardLayout({
 }) {
     const { user, isLoading } = useAuth();
     const router = useRouter();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
+        // ... existing auth check logic
         if (!isLoading && !user) {
             router.push("/login");
             return;
@@ -27,6 +29,7 @@ export default function DashboardLayout({
     }, [user, isLoading, router]);
 
     const checkSubscription = async () => {
+        // ... existing checkSubscription logic (unchanged)
         // Skip check for now if just testing (or add logic to bypass locally)
         // return; 
 
@@ -80,12 +83,12 @@ export default function DashboardLayout({
     if (!user) return null;
 
     return (
-        <div style={{ minHeight: "100vh", background: "var(--color-background)" }}>
-            <Sidebar />
-            <div style={{ display: "flex", flexDirection: "column" }}>
-                <Header />
+        <div className="dashboard-layout">
+            <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+            <div className="dashboard-main">
+                <Header onMenuClick={() => setIsSidebarOpen(true)} />
                 <main style={{
-                    marginLeft: "250px",
                     padding: "0 2rem 2rem 2rem",
                     minHeight: "calc(100vh - 80px)"
                 }}>
