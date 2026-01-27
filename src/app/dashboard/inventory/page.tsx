@@ -274,72 +274,74 @@ export default function InventoryPage() {
 
                     {/* Table */}
                     <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr>
-                                    <th style={headerCellStyle}>Produto</th>
-                                    <th style={headerCellStyle}>Variações / Estoque</th>
-                                    <th style={{ ...headerCellStyle, textAlign: 'right' }}>Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredProducts.map((product) => (
-                                    <tr key={product.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
-                                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <td style={cellStyle}>
-                                            <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>{product.name}</div>
-                                            <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '4px' }}>ID: {product.id.slice(0, 8)}...</div>
-                                        </td>
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                                {product.product_variants && product.product_variants.length > 0 ? (
-                                                    product.product_variants.map(v => (
-                                                        <div key={v.id} style={{
-                                                            padding: '6px 12px', borderRadius: '8px', fontSize: '0.875rem',
-                                                            display: 'flex', alignItems: 'center', gap: '8px',
-                                                            border: v.stock_quantity > 0 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
-                                                            background: v.stock_quantity > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-                                                            color: v.stock_quantity > 0 ? '#34d399' : '#f87171'
-                                                        }}>
-                                                            <span style={{ fontWeight: 700 }}>{v.size}</span>
-                                                            <span style={{ opacity: 0.3 }}>|</span>
-                                                            <span>{v.stock_quantity}</span>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Sem variantes</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td style={{ ...cellStyle, textAlign: 'right' }}>
-                                            {can_manage_products && (
-                                                <Button
-                                                    onClick={() => openAdjustmentModal(product)}
-                                                    disabled={!product.product_variants || product.product_variants.length === 0}
-                                                    style={{
-                                                        background: 'transparent',
-                                                        border: '1px solid rgba(255,255,255,0.1)',
-                                                        color: '#d1d5db',
-                                                        fontSize: '0.875rem',
-                                                        padding: '8px 16px'
-                                                    }}
-                                                >
-                                                    Ajustar
-                                                </Button>
-                                            )}
-                                        </td>
+                        <div className="table-responsive">
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={headerCellStyle}>Produto</th>
+                                        <th style={headerCellStyle}>Variações / Estoque</th>
+                                        <th style={{ ...headerCellStyle, textAlign: 'right' }}>Ação</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {filteredProducts.length === 0 && !loading && (
-                            <p style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Nenhum produto encontrado.</p>
-                        )}
-                        {loading && (
-                            <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Carregando estoque...</div>
-                        )}
+                                </thead>
+                                <tbody>
+                                    {filteredProducts.map((product) => (
+                                        <tr key={product.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <td style={cellStyle}>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>{product.name}</div>
+                                                <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '4px' }}>ID: {product.id.slice(0, 8)}...</div>
+                                            </td>
+                                            <td style={cellStyle}>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                    {product.product_variants && product.product_variants.length > 0 ? (
+                                                        product.product_variants.map(v => (
+                                                            <div key={v.id} style={{
+                                                                padding: '6px 12px', borderRadius: '8px', fontSize: '0.875rem',
+                                                                display: 'flex', alignItems: 'center', gap: '8px',
+                                                                border: v.stock_quantity > 0 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                                                                background: v.stock_quantity > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                                                                color: v.stock_quantity > 0 ? '#34d399' : '#f87171'
+                                                            }}>
+                                                                <span style={{ fontWeight: 700 }}>{v.size}</span>
+                                                                <span style={{ opacity: 0.3 }}>|</span>
+                                                                <span>{v.stock_quantity}</span>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Sem variantes</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td style={{ ...cellStyle, textAlign: 'right' }}>
+                                                {can_manage_products && (
+                                                    <Button
+                                                        onClick={() => openAdjustmentModal(product)}
+                                                        disabled={!product.product_variants || product.product_variants.length === 0}
+                                                        style={{
+                                                            background: 'transparent',
+                                                            border: '1px solid rgba(255,255,255,0.1)',
+                                                            color: '#d1d5db',
+                                                            fontSize: '0.875rem',
+                                                            padding: '8px 16px'
+                                                        }}
+                                                    >
+                                                        Ajustar
+                                                    </Button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            {filteredProducts.length === 0 && !loading && (
+                                <p style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Nenhum produto encontrado.</p>
+                            )}
+                            {loading && (
+                                <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Carregando estoque...</div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
@@ -378,172 +380,174 @@ export default function InventoryPage() {
             </div>
 
             {/* Adjustment Modal */}
-            {modalOpen && selectedProduct && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)'
-                }}>
+            {
+                modalOpen && selectedProduct && (
                     <div style={{
-                        ...glassStyle,
-                        background: '#111',
-                        width: '100%', maxWidth: '450px', padding: '2rem', margin: '1rem', position: 'relative',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                        position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)'
                     }}>
-                        <Button
-                            onClick={() => setModalOpen(false)}
-                            style={{ position: 'absolute', right: '1rem', top: '1rem', background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer' }}
-                        >
-                            <X size={24} />
-                        </Button>
+                        <div style={{
+                            ...glassStyle,
+                            background: '#111',
+                            width: '100%', maxWidth: '450px', padding: '2rem', margin: '1rem', position: 'relative',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+                        }}>
+                            <Button
+                                onClick={() => setModalOpen(false)}
+                                style={{ position: 'absolute', right: '1rem', top: '1rem', background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer' }}
+                            >
+                                <X size={24} />
+                            </Button>
 
-                        <div style={{ marginBottom: '2rem' }}>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Ajuste de Estoque</h2>
-                            <p style={{ color: '#9ca3af' }}>{selectedProduct.name}</p>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            {/* Variant Select */}
-                            <div>
-                                <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Variação</label>
-                                <select
-                                    style={{
-                                        width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                                        padding: '12px', color: 'white', outline: 'none'
-                                    }}
-                                    value={adjustmentData.variantId}
-                                    onChange={(e) => setAdjustmentData({ ...adjustmentData, variantId: e.target.value })}
-                                >
-                                    {selectedProduct.product_variants.map(v => (
-                                        <option key={v.id} value={v.id} style={{ background: '#222' }}>
-                                            {v.size} (Atual: {v.stock_quantity})
-                                        </option>
-                                    ))}
-                                </select>
+                            <div style={{ marginBottom: '2rem' }}>
+                                <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Ajuste de Estoque</h2>
+                                <p style={{ color: '#9ca3af' }}>{selectedProduct.name}</p>
                             </div>
 
-                            {/* Type Select */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <label style={{
-                                    cursor: 'pointer', border: '1px solid', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s',
-                                    borderColor: adjustmentData.type === 'IN' ? 'rgba(16, 185, 129, 0.5)' : 'rgba(255,255,255,0.1)',
-                                    background: adjustmentData.type === 'IN' ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                                    color: adjustmentData.type === 'IN' ? '#34d399' : '#6b7280'
-                                }} onClick={() => setAdjustmentData({ ...adjustmentData, type: 'IN' })}>
-                                    <input type="radio" name="type" className="hidden" />
-                                    <ArrowUpCircle size={28} />
-                                    <span style={{ fontWeight: 700 }}>Entrada</span>
-                                </label>
-                                <label style={{
-                                    cursor: 'pointer', border: '1px solid', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s',
-                                    borderColor: adjustmentData.type === 'OUT' ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255,255,255,0.1)',
-                                    background: adjustmentData.type === 'OUT' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                                    color: adjustmentData.type === 'OUT' ? '#ef4444' : '#6b7280'
-                                }} onClick={() => setAdjustmentData({ ...adjustmentData, type: 'OUT' })}>
-                                    <input type="radio" name="type" className="hidden" />
-                                    <ArrowDownCircle size={28} />
-                                    <span style={{ fontWeight: 700 }}>Saída</span>
-                                </label>
-                            </div>
-
-                            {/* Quantity */}
-                            <div>
-                                <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Quantidade</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    style={{
-                                        width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                                        padding: '12px', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '1.25rem'
-                                    }}
-                                    value={adjustmentData.quantity}
-                                    onChange={(e) => setAdjustmentData({ ...adjustmentData, quantity: parseInt(e.target.value) || 0 })}
-                                />
-                            </div>
-
-                            {/* Campos Financeiros Condicionais */}
-                            {adjustmentData.type === 'IN' && (
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                    <div>
-                                        <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Custo Unitário (R$)</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0,00"
-                                            style={{
-                                                width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                                                padding: '12px', color: 'white', outline: 'none'
-                                            }}
-                                            value={adjustmentData.unitCost}
-                                            onChange={(e) => setAdjustmentData({ ...adjustmentData, unitCost: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Frete Total (R$)</label>
-                                        <input
-                                            type="number"
-                                            step="0.01"
-                                            placeholder="0,00"
-                                            style={{
-                                                width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                                                padding: '12px', color: 'white', outline: 'none'
-                                            }}
-                                            value={adjustmentData.shippingCost}
-                                            onChange={(e) => setAdjustmentData({ ...adjustmentData, shippingCost: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                            )}
-
-                            {adjustmentData.type === 'OUT' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                {/* Variant Select */}
                                 <div>
-                                    <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Valor Total da Saída (R$)</label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="0,00"
+                                    <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Variação</label>
+                                    <select
                                         style={{
                                             width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
                                             padding: '12px', color: 'white', outline: 'none'
                                         }}
-                                        value={adjustmentData.exitValue}
-                                        onChange={(e) => setAdjustmentData({ ...adjustmentData, exitValue: e.target.value })}
-                                    />
-                                    <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
-                                        Caso tenha gerado receita (Ex: venda externa), informe o valor. Deixe 0 se foi perda.
-                                    </p>
+                                        value={adjustmentData.variantId}
+                                        onChange={(e) => setAdjustmentData({ ...adjustmentData, variantId: e.target.value })}
+                                    >
+                                        {selectedProduct.product_variants.map(v => (
+                                            <option key={v.id} value={v.id} style={{ background: '#222' }}>
+                                                {v.size} (Atual: {v.stock_quantity})
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
-                            )}
+
+                                {/* Type Select */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <label style={{
+                                        cursor: 'pointer', border: '1px solid', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s',
+                                        borderColor: adjustmentData.type === 'IN' ? 'rgba(16, 185, 129, 0.5)' : 'rgba(255,255,255,0.1)',
+                                        background: adjustmentData.type === 'IN' ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                                        color: adjustmentData.type === 'IN' ? '#34d399' : '#6b7280'
+                                    }} onClick={() => setAdjustmentData({ ...adjustmentData, type: 'IN' })}>
+                                        <input type="radio" name="type" className="hidden" />
+                                        <ArrowUpCircle size={28} />
+                                        <span style={{ fontWeight: 700 }}>Entrada</span>
+                                    </label>
+                                    <label style={{
+                                        cursor: 'pointer', border: '1px solid', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', transition: 'all 0.2s',
+                                        borderColor: adjustmentData.type === 'OUT' ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255,255,255,0.1)',
+                                        background: adjustmentData.type === 'OUT' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                                        color: adjustmentData.type === 'OUT' ? '#ef4444' : '#6b7280'
+                                    }} onClick={() => setAdjustmentData({ ...adjustmentData, type: 'OUT' })}>
+                                        <input type="radio" name="type" className="hidden" />
+                                        <ArrowDownCircle size={28} />
+                                        <span style={{ fontWeight: 700 }}>Saída</span>
+                                    </label>
+                                </div>
+
+                                {/* Quantity */}
+                                <div>
+                                    <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Quantidade</label>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        style={{
+                                            width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                                            padding: '12px', color: 'white', outline: 'none', fontFamily: 'monospace', fontSize: '1.25rem'
+                                        }}
+                                        value={adjustmentData.quantity}
+                                        onChange={(e) => setAdjustmentData({ ...adjustmentData, quantity: parseInt(e.target.value) || 0 })}
+                                    />
+                                </div>
+
+                                {/* Campos Financeiros Condicionais */}
+                                {adjustmentData.type === 'IN' && (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                        <div>
+                                            <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Custo Unitário (R$)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0,00"
+                                                style={{
+                                                    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                                                    padding: '12px', color: 'white', outline: 'none'
+                                                }}
+                                                value={adjustmentData.unitCost}
+                                                onChange={(e) => setAdjustmentData({ ...adjustmentData, unitCost: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Frete Total (R$)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                placeholder="0,00"
+                                                style={{
+                                                    width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                                                    padding: '12px', color: 'white', outline: 'none'
+                                                }}
+                                                value={adjustmentData.shippingCost}
+                                                onChange={(e) => setAdjustmentData({ ...adjustmentData, shippingCost: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {adjustmentData.type === 'OUT' && (
+                                    <div>
+                                        <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Valor Total da Saída (R$)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0,00"
+                                            style={{
+                                                width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                                                padding: '12px', color: 'white', outline: 'none'
+                                            }}
+                                            value={adjustmentData.exitValue}
+                                            onChange={(e) => setAdjustmentData({ ...adjustmentData, exitValue: e.target.value })}
+                                        />
+                                        <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+                                            Caso tenha gerado receita (Ex: venda externa), informe o valor. Deixe 0 se foi perda.
+                                        </p>
+                                    </div>
+                                )}
 
 
-                            {/* Reason */}
-                            <div>
-                                <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Motivo</label>
-                                <input
-                                    type="text"
+                                {/* Reason */}
+                                <div>
+                                    <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Motivo</label>
+                                    <input
+                                        type="text"
+                                        style={{
+                                            width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
+                                            padding: '12px', color: 'white', outline: 'none'
+                                        }}
+                                        placeholder="Ex: Compra, Inventário, Perda..."
+                                        value={adjustmentData.reason}
+                                        onChange={(e) => setAdjustmentData({ ...adjustmentData, reason: e.target.value })}
+                                    />
+                                </div>
+
+                                <Button
+                                    onClick={handleSaveAdjustment}
+                                    disabled={saving}
                                     style={{
-                                        width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-                                        padding: '12px', color: 'white', outline: 'none'
+                                        width: '100%', background: 'var(--color-primary)', border: 'none', borderRadius: '8px', padding: '14px',
+                                        color: 'white', fontWeight: 700, fontSize: '1rem', marginTop: '1rem'
                                     }}
-                                    placeholder="Ex: Compra, Inventário, Perda..."
-                                    value={adjustmentData.reason}
-                                    onChange={(e) => setAdjustmentData({ ...adjustmentData, reason: e.target.value })}
-                                />
+                                >
+                                    {saving ? "Salvando..." : "Confirmar Ajuste"}
+                                </Button>
                             </div>
-
-                            <Button
-                                onClick={handleSaveAdjustment}
-                                disabled={saving}
-                                style={{
-                                    width: '100%', background: 'var(--color-primary)', border: 'none', borderRadius: '8px', padding: '14px',
-                                    color: 'white', fontWeight: 700, fontSize: '1rem', marginTop: '1rem'
-                                }}
-                            >
-                                {saving ? "Salvando..." : "Confirmar Ajuste"}
-                            </Button>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }

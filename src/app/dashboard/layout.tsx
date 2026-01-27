@@ -88,10 +88,13 @@ export default function DashboardLayout({
 
             <div className="dashboard-main">
                 <Header onMenuClick={() => setIsSidebarOpen(true)} />
-                <main style={{
-                    padding: "0 2rem 2rem 2rem",
-                    minHeight: "calc(100vh - 80px)"
-                }}>
+                <main
+                    className="dashboard-content"
+                    style={{
+                        padding: "0 2rem 2rem 2rem",
+                        minHeight: "calc(100vh - 80px)"
+                    }}
+                >
                     {children}
                 </main>
             </div>

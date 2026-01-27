@@ -7,7 +7,7 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
     return (
         <header
-            className="glass-panel"
+            className="glass-panel dashboard-header"
             style={{
                 height: "80px",
                 display: "flex",

@@ -577,7 +577,7 @@ export default function ReportsPage() {
 
                     {/* Table Data */}
                     <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                        <div style={{ overflowX: 'auto' }}>
+                        <div className="table-responsive">
                             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                                 <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
                                     <tr>

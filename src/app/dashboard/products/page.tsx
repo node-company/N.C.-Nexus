@@ -179,7 +179,7 @@ export default function ProductsPage() {
                 </div>
             ) : (
                 <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                    <div style={{ overflowX: 'auto' }}>
+                    <div className="table-responsive">
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr>

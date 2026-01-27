@@ -321,79 +321,80 @@ export default function FinancialPage() {
                 {loading ? (
                     <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Carregando dados financeiros...</div>
                 ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
-                            <tr>
-                                <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Descrição</th>
-                                <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Categoria</th>
-                                <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Data</th>
-                                <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Valor</th>
-                                <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {records.map((rec) => (
-                                <tr key={rec.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '1rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                            <div style={{
-                                                padding: '8px', borderRadius: '8px',
-                                                background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                color: rec.type === 'INCOME' ? '#10b981' : '#ef4444'
-                                            }}>
-                                                {rec.source === 'SALE' ? <ShoppingBag size={18} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />)}
-                                            </div>
-                                            <div>
-                                                <p style={{ fontWeight: 600, color: 'white', margin: 0 }}>{rec.description}</p>
-                                                <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{rec.source === 'SALE' ? 'Venda Automática' : 'Manual'}</span>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <span style={{ padding: '4px 8px', borderRadius: '999px', background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                            {rec.category || 'Geral'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '1rem', color: '#9ca3af', fontSize: '0.875rem' }}>
-                                        {format(new Date(rec.date), "dd/MM/yyyy", { locale: ptBR })}
-                                    </td>
-                                    <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
-                                        {rec.type === 'INCOME' ? '+' : '-'} R$ {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                        {rec.source === 'MANUAL' && (
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                <button
-                                                    onClick={() => handleOpenModal(rec)}
-                                                    style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }}
-                                                    title="Editar"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteClick(rec.id)}
-                                                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                                                    title="Excluir"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                                </button>
-                                            </div>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                            {records.length === 0 && (
+                    <div className="table-responsive">
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
                                 <tr>
-                                    <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
-                                        Nenhuma movimentação registrada.
-                                    </td>
+                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Descrição</th>
+                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Categoria</th>
+                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Data</th>
+                                    <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Valor</th>
+                                    <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Ações</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {records.map((rec) => (
+                                    <tr key={rec.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <td style={{ padding: '1rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div style={{
+                                                    padding: '8px', borderRadius: '8px',
+                                                    background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                    color: rec.type === 'INCOME' ? '#10b981' : '#ef4444'
+                                                }}>
+                                                    {rec.source === 'SALE' ? <ShoppingBag size={18} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />)}
+                                                </div>
+                                                <div>
+                                                    <p style={{ fontWeight: 600, color: 'white', margin: 0 }}>{rec.description}</p>
+                                                    <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{rec.source === 'SALE' ? 'Venda Automática' : 'Manual'}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '1rem' }}>
+                                            <span style={{ padding: '4px 8px', borderRadius: '999px', background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                {rec.category || 'Geral'}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1rem', color: '#9ca3af', fontSize: '0.875rem' }}>
+                                            {format(new Date(rec.date), "dd/MM/yyyy", { locale: ptBR })}
+                                        </td>
+                                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
+                                            {rec.type === 'INCOME' ? '+' : '-'} R$ {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                            {rec.source === 'MANUAL' && (
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                    <button
+                                                        onClick={() => handleOpenModal(rec)}
+                                                        style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }}
+                                                        title="Editar"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(rec.id)}
+                                                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                                                        title="Excluir"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {records.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                                            Nenhuma movimentação registrada.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
-
             {/* Delete Confirmation Modal */}
             {pendingDeleteId && (
                 <div style={{
