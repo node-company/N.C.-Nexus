@@ -62,7 +62,7 @@ export default function LandingPage() {
                 <div style={{ position: 'relative', zIndex: 10, maxWidth: '1000px', margin: '0 auto' }}>
 
                     <h1 style={{
-                        fontSize: '4.5rem',
+                        fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
                         fontWeight: 900,
                         lineHeight: 1.1,
                         marginBottom: '2rem',
@@ -129,7 +129,7 @@ export default function LandingPage() {
                                 <div style={{ height: '32px', width: '32px', background: 'rgba(255,255,255,0.1)', borderRadius: '50%' }}></div>
                             </div>
                             {/* Stats */}
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem' }}>
                                 <div style={{ background: '#1e293b', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(59,130,246,0.1)' }}>
                                     <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Vendas Hoje</div>
                                     <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#00FF7F' }}>R$ 12.450,00</div>
@@ -203,7 +203,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Varejo */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center', marginBottom: '8rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center', marginBottom: '8rem' }}>
                         <div>
                             <div style={{ color: '#00FF7F', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Varejo e Lojas</div>
                             <h3 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>Venda com a certeza de que o estoque bate.</h3>
@@ -243,7 +243,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Serviços */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', alignItems: 'center', direction: 'rtl' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center', direction: 'rtl' }}>
                         <div style={{ direction: 'ltr' }}>
                             <div style={{ color: '#60a5fa', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Serviços e Projetos</div>
                             <h3 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>Gerencie sua equipe externa e interna.</h3>
