@@ -27,16 +27,17 @@ export default function SubscriptionPendingPage() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                padding: "2rem",
+                padding: "1rem",
                 background: "#0f172a",
                 color: "white",
             }}
         >
             <Card
                 style={{
+                    width: "100%",
                     maxWidth: "500px",
                     textAlign: "center",
-                    padding: "3rem",
+                    padding: "clamp(1.5rem, 5vw, 3rem)",
                     border: "1px solid rgba(239, 68, 68, 0.2)",
                     background: "rgba(30, 41, 59, 0.5)",
                 }}
