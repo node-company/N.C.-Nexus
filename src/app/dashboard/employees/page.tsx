@@ -91,29 +91,12 @@ export default function EmployeesPage() {
         borderRadius: '16px',
     };
 
-    const headerCellStyle = {
-        padding: '1.5rem 2rem',
-        textAlign: 'left' as const,
-        fontSize: '0.75rem',
-        fontWeight: 700,
-        color: '#9ca3af',
-        textTransform: 'uppercase' as const,
-        letterSpacing: '0.05em',
-        borderBottom: '1px solid rgba(255,255,255,0.05)'
-    };
-
-    const cellStyle = {
-        padding: '2rem 2rem',
-        color: 'white',
-        verticalAlign: 'middle'
-    };
-
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem', animation: 'fadeIn 0.6s ease' }}>
             {/* Header Section */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                <div style={{ maxWidth: '100%' }}>
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word' }}>
                         Funcionários
                     </h1>
                     <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Gerencie sua equipe.</p>
@@ -144,6 +127,7 @@ export default function EmployeesPage() {
                 padding: '1rem',
                 display: 'flex',
                 alignItems: 'center',
+                width: '100%',
                 maxWidth: '500px'
             }}>
                 <Search style={{ color: '#9ca3af', marginRight: '1rem' }} size={20} />
@@ -171,102 +155,181 @@ export default function EmployeesPage() {
                 </div>
             ) : (
                 <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                    <div className="table-responsive">
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr>
-                                    <th style={headerCellStyle}>Nome</th>
-                                    <th style={headerCellStyle}>Cargo / Status</th>
-                                    <th style={headerCellStyle}>Contato</th>
-                                    <th style={{ ...headerCellStyle, textAlign: 'right' }}>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredEmployees.map((employee) => (
-                                    <tr key={employee.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
-                                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                                <div style={{
-                                                    width: '50px', height: '50px', borderRadius: '50%',
-                                                    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
-                                                }}>
-                                                    <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>
-                                                        {employee.name.charAt(0).toUpperCase()}
+
+                    {/* Desktop Table View */}
+                    <div className="desktop-table-view">
+                        <div className="table-responsive">
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr>
+                                        <th className="responsive-table-header">Nome</th>
+                                        <th className="responsive-table-header">Cargo / Status</th>
+                                        <th className="responsive-table-header">Contato</th>
+                                        <th className="responsive-table-header" style={{ textAlign: 'right' }}>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredEmployees.map((employee) => (
+                                        <tr key={employee.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <td className="responsive-table-cell">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                                    <div style={{
+                                                        width: '50px', height: '50px', borderRadius: '50%',
+                                                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
+                                                    }}>
+                                                        <span style={{ fontSize: '1.2rem', fontWeight: 700, color: 'white' }}>
+                                                            {employee.name.charAt(0).toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                    <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>{employee.name}</span>
+                                                </div>
+                                            </td>
+                                            <td className="responsive-table-cell">
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', color: 'white' }}>
+                                                        <Briefcase size={16} style={{ color: '#9ca3af' }} /> {employee.role}
+                                                    </div>
+                                                    <span style={{
+                                                        fontSize: '0.75rem',
+                                                        color: employee.active ? '#34d399' : '#ef4444',
+                                                        background: employee.active ? 'rgba(52, 211, 153, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                        padding: '2px 8px', borderRadius: '4px', width: 'fit-content'
+                                                    }}>
+                                                        {employee.active ? 'Ativo' : 'Inativo'}
                                                     </span>
                                                 </div>
-                                                <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>{employee.name}</span>
-                                            </div>
-                                        </td>
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', color: 'white' }}>
-                                                    <Briefcase size={16} style={{ color: '#9ca3af' }} /> {employee.role}
+                                            </td>
+                                            <td className="responsive-table-cell">
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                    {employee.email && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#d1d5db' }}>
+                                                            <Mail size={14} style={{ color: '#4b5563' }} /> {employee.email}
+                                                        </div>
+                                                    )}
+                                                    {employee.phone && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#d1d5db' }}>
+                                                            <Phone size={14} style={{ color: '#4b5563' }} /> {employee.phone}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <span style={{
-                                                    fontSize: '0.75rem',
-                                                    color: employee.active ? '#34d399' : '#ef4444',
-                                                    background: employee.active ? 'rgba(52, 211, 153, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                    padding: '2px 8px', borderRadius: '4px', width: 'fit-content'
-                                                }}>
-                                                    {employee.active ? 'Ativo' : 'Inativo'}
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                {employee.email && (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#d1d5db' }}>
-                                                        <Mail size={14} style={{ color: '#4b5563' }} /> {employee.email}
-                                                    </div>
-                                                )}
-                                                {employee.phone && (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#d1d5db' }}>
-                                                        <Phone size={14} style={{ color: '#4b5563' }} /> {employee.phone}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td style={{ ...cellStyle, textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                                                <Button
-                                                    onClick={() => router.push(`/dashboard/employees/${employee.id}`)}
-                                                    style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    title="Editar"
-                                                >
-                                                    <Edit size={18} />
-                                                </Button>
-                                                <Button
-                                                    onClick={() => handleDelete(employee.id)}
-                                                    style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {filteredEmployees.length === 0 && (
-                            <div style={{ padding: '4rem', textAlign: 'center' }}>
-                                <div style={{ width: '4rem', height: '4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-                                    <User style={{ color: '#4b5563' }} size={32} />
-                                </div>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Nenhum funcionário encontrado</h3>
-                                <Link href="/dashboard/employees/new">
-                                    <Button style={{ background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}>
-                                        Adicionar Funcionário
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
+                                            </td>
+                                            <td className="responsive-table-cell" style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                                                    <Button
+                                                        onClick={() => router.push(`/dashboard/employees/${employee.id}`)}
+                                                        style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        title="Editar"
+                                                    >
+                                                        <Edit size={18} />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleDelete(employee.id)}
+                                                        style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+
+                    {/* Mobile Card View */}
+                    <div className="mobile-card-view">
+                        <div style={{ padding: '1rem' }}>
+                            {filteredEmployees.map((employee) => (
+                                <div key={employee.id} className="mobile-card" style={{ padding: '1.25rem', alignItems: 'center', textAlign: 'center', gap: '0.75rem' }}>
+
+                                    {/* Avatar */}
+                                    <div style={{
+                                        width: '64px', height: '64px', borderRadius: '50%',
+                                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
+                                        marginBottom: '0.25rem'
+                                    }}>
+                                        <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>
+                                            {employee.name.charAt(0).toUpperCase()}
+                                        </span>
+                                    </div>
+
+                                    {/* Identity */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', wordBreak: 'break-word', lineHeight: 1.2 }}>
+                                            {employee.name}
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '0.9rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <Briefcase size={14} /> {employee.role}
+                                            </span>
+                                            <span style={{
+                                                fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px',
+                                                color: employee.active ? '#34d399' : '#ef4444',
+                                                background: employee.active ? 'rgba(52, 211, 153, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                border: employee.active ? '1px solid rgba(52, 211, 153, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
+                                            }}>
+                                                {employee.active ? 'Ativo' : 'Inativo'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0.5rem 0' }}></div>
+
+                                    {/* Contact */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
+                                        {employee.email && (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#d1d5db', wordBreak: 'break-all' }}>
+                                                <Mail size={14} style={{ flexShrink: 0, color: '#4b5563' }} /> {employee.email}
+                                            </div>
+                                        )}
+                                        {employee.phone && (
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#d1d5db' }}>
+                                                <Phone size={14} style={{ flexShrink: 0, color: '#4b5563' }} /> {employee.phone}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div style={{ display: 'flex', gap: '0.75rem', width: '100%', marginTop: '0.75rem' }}>
+                                        <Button
+                                            onClick={() => router.push(`/dashboard/employees/${employee.id}`)}
+                                            style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '8px', fontWeight: 600 }}
+                                        >
+                                            <Edit size={16} /> Editar
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleDelete(employee.id)}
+                                            style={{ flex: 1, padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '8px', fontWeight: 600 }}
+                                        >
+                                            <Trash2 size={16} /> Excluir
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {filteredEmployees.length === 0 && (
+                        <div style={{ padding: '4rem', textAlign: 'center' }}>
+                            <div style={{ width: '4rem', height: '4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                                <User style={{ color: '#4b5563' }} size={32} />
+                            </div>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Nenhum funcionário encontrado</h3>
+                            <Link href="/dashboard/employees/new">
+                                <Button style={{ background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}>
+                                    Adicionar Funcionário
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

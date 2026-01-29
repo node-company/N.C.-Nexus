@@ -13,7 +13,9 @@ import {
     ArrowDownCircle,
     ShoppingBag,
     Wallet,
-    X
+    X,
+    Edit,
+    Trash2
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -256,11 +258,11 @@ export default function FinancialPage() {
     };
 
     return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '5rem', animation: 'fadeIn 0.6s ease' }}>
+        <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', paddingBottom: '5rem', animation: 'fadeIn 0.6s ease', overflowX: 'hidden' }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '2.25rem', fontWeight: 800, background: 'linear-gradient(to right, #34d399, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ maxWidth: '100%' }}>
+                    <h1 style={{ fontSize: '2.25rem', fontWeight: 800, background: 'linear-gradient(to right, #34d399, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word', lineHeight: 1.2 }}>
                         Financeiro
                     </h1>
                     <p style={{ color: '#9ca3af', marginTop: '0.25rem' }}>Fluxo de Caixa e Resultados</p>
@@ -274,7 +276,7 @@ export default function FinancialPage() {
             </div>
 
             {/* KPI Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100%, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                 {/* Revenue */}
                 <div style={{ ...glassStyle, padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, right: 0, padding: '1rem', opacity: 0.1 }}>
@@ -321,78 +323,146 @@ export default function FinancialPage() {
                 {loading ? (
                     <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Carregando dados financeiros...</div>
                 ) : (
-                    <div className="table-responsive">
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                <tr>
-                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Descrição</th>
-                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Categoria</th>
-                                    <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Data</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Valor</th>
-                                    <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <>
+                        {/* Desktop Table View */}
+                        <div className="desktop-table-view">
+                            <div className="table-responsive">
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                        <tr>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Descrição</th>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Categoria</th>
+                                            <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Data</th>
+                                            <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Valor</th>
+                                            <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase' }}>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {records.map((rec) => (
+                                            <tr key={rec.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                        <div style={{
+                                                            padding: '8px', borderRadius: '8px',
+                                                            background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                            color: rec.type === 'INCOME' ? '#10b981' : '#ef4444'
+                                                        }}>
+                                                            {rec.source === 'SALE' ? <ShoppingBag size={18} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />)}
+                                                        </div>
+                                                        <div>
+                                                            <p style={{ fontWeight: 600, color: 'white', margin: 0 }}>{rec.description}</p>
+                                                            <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{rec.source === 'SALE' ? 'Venda Automática' : 'Manual'}</span>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ padding: '1rem' }}>
+                                                    <span style={{ padding: '4px 8px', borderRadius: '999px', background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                                        {rec.category || 'Geral'}
+                                                    </span>
+                                                </td>
+                                                <td style={{ padding: '1rem', color: '#9ca3af', fontSize: '0.875rem' }}>
+                                                    {format(new Date(rec.date), "dd/MM/yyyy", { locale: ptBR })}
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
+                                                    {rec.type === 'INCOME' ? '+' : '-'} R$ {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                </td>
+                                                <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                                    {rec.source === 'MANUAL' && (
+                                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                            <button
+                                                                onClick={() => handleOpenModal(rec)}
+                                                                style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }}
+                                                                title="Editar"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleDeleteClick(rec.id)}
+                                                                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                                                                title="Excluir"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {records.length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                                                    Nenhuma movimentação registrada.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="mobile-card-view">
+                            <div style={{ padding: '1rem' }}>
                                 {records.map((rec) => (
-                                    <tr key={rec.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <td style={{ padding: '1rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                <div style={{
-                                                    padding: '8px', borderRadius: '8px',
-                                                    background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                    color: rec.type === 'INCOME' ? '#10b981' : '#ef4444'
-                                                }}>
-                                                    {rec.source === 'SALE' ? <ShoppingBag size={18} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={18} /> : <ArrowDownCircle size={18} />)}
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontWeight: 600, color: 'white', margin: 0 }}>{rec.description}</p>
-                                                    <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{rec.source === 'SALE' ? 'Venda Automática' : 'Manual'}</span>
-                                                </div>
+                                    <div key={rec.id} className="mobile-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1rem' }}>
+
+                                        {/* Icon */}
+                                        <div style={{
+                                            padding: '12px', borderRadius: '12px',
+                                            background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                            color: rec.type === 'INCOME' ? '#10b981' : '#ef4444',
+                                            display: 'inline-flex', marginBottom: '0.5rem',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                                        }}>
+                                            {rec.source === 'SALE' ? <ShoppingBag size={24} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={24} /> : <ArrowDownCircle size={24} />)}
+                                        </div>
+
+                                        {/* Main Info */}
+                                        <div style={{ width: '100%' }}>
+                                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem', wordBreak: 'break-word', lineHeight: 1.3 }}>
+                                                {rec.description}
+                                            </h3>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', color: '#9ca3af' }}>
+                                                <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{rec.category || 'Geral'}</span>
+                                                <span>{format(new Date(rec.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}</span>
                                             </div>
-                                        </td>
-                                        <td style={{ padding: '1rem' }}>
-                                            <span style={{ padding: '4px 8px', borderRadius: '999px', background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)' }}>
-                                                {rec.category || 'Geral'}
+                                        </div>
+
+                                        {/* Amount */}
+                                        <div style={{ margin: '0.5rem 0', width: '100%', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>Valor</span>
+                                            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
+                                                {rec.type === 'INCOME' ? '+' : '-'} {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
-                                        </td>
-                                        <td style={{ padding: '1rem', color: '#9ca3af', fontSize: '0.875rem' }}>
-                                            {format(new Date(rec.date), "dd/MM/yyyy", { locale: ptBR })}
-                                        </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
-                                            {rec.type === 'INCOME' ? '+' : '-'} R$ {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </td>
-                                        <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                            {rec.source === 'MANUAL' && (
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                    <button
-                                                        onClick={() => handleOpenModal(rec)}
-                                                        style={{ background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '4px' }}
-                                                        title="Editar"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteClick(rec.id)}
-                                                        style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                                                        title="Excluir"
-                                                    >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </td>
-                                    </tr>
+                                        </div>
+
+                                        {/* Actions */}
+                                        {rec.source === 'MANUAL' && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                                                <button
+                                                    onClick={() => handleOpenModal(rec)}
+                                                    style={{ width: '100%', padding: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}
+                                                >
+                                                    <Edit size={18} /> Editar Movimentação
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(rec.id)}
+                                                    style={{ width: '100%', padding: '14px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}
+                                                >
+                                                    <Trash2 size={18} /> Excluir Registro
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 ))}
                                 {records.length === 0 && (
-                                    <tr>
-                                        <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
-                                            Nenhuma movimentação registrada.
-                                        </td>
-                                    </tr>
+                                    <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                                        Nenhuma movimentação registrada.
+                                    </div>
                                 )}
-                            </tbody>
-                        </table>
-                    </div>
+                            </div>
+                        </div>
+                    </>
                 )}
             </div>
             {/* Delete Confirmation Modal */}

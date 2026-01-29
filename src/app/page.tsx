@@ -4,9 +4,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BarChart3, Box, CheckCircle2, LayoutDashboard, ShieldCheck, Users, Zap, TrendingUp, AlertTriangle } from "lucide-react";
+import { ArrowRight, BarChart3, Box, CheckCircle2, LayoutDashboard, ShieldCheck, Users, Zap, TrendingUp, AlertTriangle, X } from "lucide-react";
 
 export default function LandingPage() {
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const router = useRouter();
+
     const scrollToPricing = () => {
         const element = document.getElementById('pricing');
         if (element) {
@@ -28,10 +31,12 @@ export default function LandingPage() {
                 position: 'relative',
                 zIndex: 50
             }}>
-                <div style={{ width: '180px', filter: 'brightness(1.1)' }}>
+                <div style={{ width: '140px', filter: 'brightness(1.1)', position: 'relative', zIndex: 60 }}>
                     <img src="/nc-nexus-logo.png" alt="NC Nexus" style={{ width: '100%' }} />
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+
+                {/* Desktop Menu */}
+                <div className="mobile-hidden" style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <Link href="/portal">
                         <Button variant="ghost" style={{ color: '#cbd5e1' }}>Entrar</Button>
                     </Link>
@@ -46,6 +51,42 @@ export default function LandingPage() {
                         Começar Grátis
                     </Button>
                 </div>
+
+                {/* Mobile Menu Toggle */}
+                <div className="desktop-hidden" style={{ position: 'relative', zIndex: 60 }}>
+                    <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ background: 'transparent', border: 'none', color: 'white' }}>
+                        {mobileMenuOpen ? <X size={28} /> : <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <span style={{ width: '28px', height: '2px', background: 'white' }}></span>
+                            <span style={{ width: '28px', height: '2px', background: 'white' }}></span>
+                            <span style={{ width: '28px', height: '2px', background: 'white' }}></span>
+                        </div>}
+                    </button>
+                </div>
+
+                {/* Mobile Menu Overlay */}
+                {mobileMenuOpen && (
+                    <div style={{
+                        position: 'fixed', inset: 0, background: '#0f172a', zIndex: 55,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem',
+                        padding: '2rem', animation: 'fadeIn 0.2s ease-out'
+                    }}>
+                        <Link href="/portal" onClick={() => setMobileMenuOpen(false)}>
+                            <Button variant="ghost" style={{ color: 'white', fontSize: '1.5rem' }}>Entrar</Button>
+                        </Link>
+                        <Button
+                            onClick={() => { scrollToPricing(); setMobileMenuOpen(false); }}
+                            style={{
+                                background: '#00FF7F',
+                                color: 'black',
+                                fontWeight: 800,
+                                padding: '1.5rem 3rem',
+                                fontSize: '1.25rem',
+                                width: '100%'
+                            }}>
+                            Começar Grátis
+                        </Button>
+                    </div>
+                )}
             </nav>
 
             {/* Hero Section */}
@@ -170,7 +211,7 @@ export default function LandingPage() {
                         </h2>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                    <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                         <FeatureCard
                             icon={<AlertTriangle size={36} color="#ef4444" />}
                             title="Vendas recorde, caixa vazio?"
@@ -203,7 +244,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Varejo */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center', marginBottom: '8rem' }}>
+                    <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center', marginBottom: '8rem' }}>
                         <div>
                             <div style={{ color: '#00FF7F', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Varejo e Lojas</div>
                             <h3 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>Venda com a certeza de que o estoque bate.</h3>
@@ -243,7 +284,7 @@ export default function LandingPage() {
                     </div>
 
                     {/* Serviços */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center', direction: 'rtl' }}>
+                    <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center', direction: 'rtl' }}>
                         <div style={{ direction: 'ltr' }}>
                             <div style={{ color: '#60a5fa', fontWeight: 700, marginBottom: '0.5rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Serviços e Projetos</div>
                             <h3 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1.5rem' }}>Gerencie sua equipe externa e interna.</h3>
@@ -394,7 +435,7 @@ export default function LandingPage() {
                         </p>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
+                    <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
                         {/* Monthly */}
                         {/* Monthly */}
                         <PricingCard
@@ -442,7 +483,7 @@ export default function LandingPage() {
                             Histórias reais de quem saiu do caos para a organização.
                         </p>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                    <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                         <WhatsAppReview
                             name="Ricardo Silva"
                             message="Cara, só passando pra agradecer. Fechei o caixa de ontem em 10 minutos, antes levava 2 horas. O Nexus salvou minha vida kkkk"
@@ -813,7 +854,7 @@ function HowItWorksStep({ number, title, description, imageAlign = 'right', icon
             alignItems: 'center',
             gap: '4rem',
             textAlign: 'left'
-        }} className="flex-col md:flex-row">
+        }} className="mobile-stack">
 
             {/* Text Side */}
             <div style={{ flex: 1 }}>

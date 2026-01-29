@@ -322,7 +322,7 @@ function CheckoutContent() {
                     </div>
                 </header>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '4rem', alignItems: 'start' }}>
+                <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '4rem', alignItems: 'start' }}>
 
                     {/* Left Column: Plan Summary */}
                     <div style={{ animation: 'fadeInLeft 0.7s ease-out' }}>

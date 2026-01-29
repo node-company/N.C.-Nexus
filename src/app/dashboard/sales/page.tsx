@@ -59,6 +59,7 @@ export default function SalesPDVPage() {
 
     // View State
     const [viewMode, setViewMode] = useState<'POS' | 'HISTORY'>('POS');
+    const [mobileTab, setMobileTab] = useState<'CATALOG' | 'CART'>('CATALOG');
     const [historyTab, setHistoryTab] = useState<'SALES' | 'QUOTES'>('SALES');
     const [pendingAction, setPendingAction] = useState<{ type: 'EDIT' | 'DELETE' | 'CONVERT', sale: any } | null>(null);
     const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
@@ -99,6 +100,17 @@ export default function SalesPDVPage() {
 
     // Checkout State
     const [processing, setProcessing] = useState(false);
+
+    const [notification, setNotification] = useState<string | null>(null);
+    const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+    // Notification Timer
+    useEffect(() => {
+        if (notification) {
+            const timer = setTimeout(() => setNotification(null), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
 
     // Styles
     const glassStyle = {
@@ -267,6 +279,7 @@ export default function SalesPDVPage() {
             setVariantModalOpen(false);
             setProductForVariantSel(null);
         }
+        setNotification(`${item.name} adicionado!`);
     };
 
     const removeFromCart = (tempId: string) => {
@@ -552,11 +565,11 @@ export default function SalesPDVPage() {
                             setEditingSaleId(null); setCart([]); setDiscountValue(0); setViewMode('POS');
                         }}
                         style={{
-                            padding: '8px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '6px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem',
                             background: viewMode === 'POS' ? 'var(--color-primary)' : 'transparent', color: viewMode === 'POS' ? 'white' : '#9ca3af', transition: 'all 0.2s'
                         }}
                     >
-                        <Store size={18} /> Nova Venda
+                        <Store size={16} /> Nova Venda
                     </button>
                     <button
                         onClick={() => {
@@ -564,11 +577,11 @@ export default function SalesPDVPage() {
                             setEditingSaleId(null); setCart([]); setDiscountValue(0); setViewMode('HISTORY');
                         }}
                         style={{
-                            padding: '8px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            padding: '6px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem',
                             background: viewMode === 'HISTORY' ? 'var(--color-primary)' : 'transparent', color: viewMode === 'HISTORY' ? 'white' : '#9ca3af', transition: 'all 0.2s'
                         }}
                     >
-                        <History size={18} /> Histórico
+                        <History size={16} /> Histórico
                     </button>
                 </div>
             </div>
@@ -577,26 +590,81 @@ export default function SalesPDVPage() {
             {/* Content Switch */}
             {
                 viewMode === 'POS' ? (
-                    <div className="sales-container" style={{ flex: 1, padding: 0, height: 'auto' }}>
+                    <div className="sales-container mobile-stack" style={{ display: 'flex', flexDirection: 'row', gap: '1rem', flex: 1, padding: 0, height: '100%', overflow: 'hidden' }}>
+
+                        {/* Mobile Tab Switcher */}
+                        <div className="mobile-only" style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', width: '100%' }}>
+                            <button
+                                onClick={() => setMobileTab('CATALOG')}
+                                style={{
+                                    flex: 1, padding: '12px', borderRadius: '8px', border: 'none', fontWeight: 700,
+                                    background: mobileTab === 'CATALOG' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                                    color: mobileTab === 'CATALOG' ? 'black' : '#9ca3af'
+                                }}
+                            >
+                                Catálogo
+                            </button>
+                            <button
+                                onClick={() => setMobileTab('CART')}
+                                style={{
+                                    flex: 1, padding: '12px', borderRadius: '8px', border: 'none', fontWeight: 700,
+                                    background: mobileTab === 'CART' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)',
+                                    color: mobileTab === 'CART' ? 'black' : '#9ca3af',
+                                    position: 'relative'
+                                }}
+                            >
+                                Carrinho
+                                {cart.length > 0 && <span style={{ position: 'absolute', top: -5, right: -5, background: '#ef4444', color: 'white', fontSize: '0.7rem', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{cart.length}</span>}
+                            </button>
+                        </div>
+
                         {/* Left: Product/Service Catalog */}
-                        <div className="sales-catalog">
+                        <div className={`sales-catalog ${mobileTab === 'CART' ? 'mobile-hidden' : ''} mobile-full-width`} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                             {/* Filter & Search Bar */}
-                            <div style={{ ...glassStyle, borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.25rem', borderRadius: '8px', overflowX: 'auto' }}>
-                                    <button onClick={() => setFilterType('ALL')} style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: filterType === 'ALL' ? 'var(--color-primary)' : 'transparent', color: filterType === 'ALL' ? 'white' : '#9ca3af', whiteSpace: 'nowrap' }}>Todos</button>
-                                    <button onClick={() => setFilterType('PRODUCT')} style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: filterType === 'PRODUCT' ? 'var(--color-primary)' : 'transparent', color: filterType === 'PRODUCT' ? 'white' : '#9ca3af', whiteSpace: 'nowrap' }}>Produtos</button>
-                                    <button onClick={() => setFilterType('SERVICE')} style={{ padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: filterType === 'SERVICE' ? 'var(--color-primary)' : 'transparent', color: filterType === 'SERVICE' ? 'white' : '#9ca3af', whiteSpace: 'nowrap' }}>Serviços</button>
+                            <div style={{ ...glassStyle, borderRadius: '12px', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(0,0,0,0.2)' }}>
+                                <div className={showMobileSearch ? 'mobile-hidden' : ''} style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', flex: 1 }}>
+                                    <button onClick={() => setFilterType('ALL')} style={{ padding: '6px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: filterType === 'ALL' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)', color: filterType === 'ALL' ? 'white' : '#9ca3af', whiteSpace: 'nowrap' }}>Todos</button>
+                                    <button onClick={() => setFilterType('PRODUCT')} style={{ padding: '6px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: filterType === 'PRODUCT' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)', color: filterType === 'PRODUCT' ? 'white' : '#9ca3af', whiteSpace: 'nowrap' }}>Prod.</button>
+                                    <button onClick={() => setFilterType('SERVICE')} style={{ padding: '6px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, border: 'none', cursor: 'pointer', background: filterType === 'SERVICE' ? 'var(--color-primary)' : 'rgba(255,255,255,0.05)', color: filterType === 'SERVICE' ? 'white' : '#9ca3af', whiteSpace: 'nowrap' }}>Serv.</button>
                                 </div>
                                 <div className="desktop-only" style={{ height: '24px', width: '1px', background: 'rgba(255,255,255,0.1)' }}></div>
-                                <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+
+                                {/* Search Logic */}
+                                <div className="mobile-only" style={{ display: 'flex', alignItems: 'center', flex: showMobileSearch ? 1 : 0, transition: 'all 0.3s' }}>
+                                    {showMobileSearch ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', width: '100%', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '0 8px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                                            <Search size={16} style={{ color: '#9ca3af' }} />
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                placeholder="Buscar..."
+                                                style={{ background: 'transparent', border: 'none', outline: 'none', color: 'white', width: '100%', padding: '8px', fontSize: '0.9rem' }}
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                onBlur={() => !searchTerm && setShowMobileSearch(false)}
+                                            />
+                                            <button onClick={() => { setSearchTerm(''); setShowMobileSearch(false); }} style={{ background: 'transparent', border: 'none', color: '#6b7280', padding: '4px' }}><X size={14} /></button>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowMobileSearch(true)}
+                                            style={{ background: 'transparent', border: 'none', color: searchTerm ? 'var(--color-primary)' : '#9ca3af', padding: '8px' }}
+                                        >
+                                            <Search size={22} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Desktop Search (Always Visible) */}
+                                <div className="desktop-only" style={{ display: 'flex', alignItems: 'center', marginLeft: '1rem', flex: 1 }}>
                                     <Search style={{ color: '#9ca3af', marginRight: '0.75rem', minWidth: '20px' }} size={20} />
                                     <input type="text" placeholder="Buscar..." style={{ background: 'transparent', border: 'none', outline: 'none', color: 'white', width: '100%', fontSize: '1rem' }} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                                 </div>
                             </div>
 
                             {/* Catalog Grid */}
-                            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
+                            <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', marginTop: '1rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.5rem' }}>
                                     {filteredCatalog.map(item => {
                                         const isProduct = item.type === 'PRODUCT';
                                         let stockDisplay = null;
@@ -610,13 +678,13 @@ export default function SalesPDVPage() {
                                             stockDisplay = 'Serviço';
                                         }
                                         return (
-                                            <div key={item.id} onClick={() => addToCart(item)} style={{ ...glassStyle, padding: '1rem', cursor: 'pointer', transition: 'transform 0.2s', position: 'relative' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                                <div style={{ aspectRatio: '1/1', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                                                    {item.image_url ? <img src={item.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (isProduct ? <Package style={{ color: '#4b5563' }} size={32} /> : <Briefcase style={{ color: '#4b5563' }} size={32} />)}
+                                            <div key={item.id} onClick={() => addToCart(item)} style={{ ...glassStyle, padding: '0.75rem', cursor: 'pointer', transition: 'transform 0.2s', position: 'relative' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
+                                                <div style={{ aspectRatio: '1/1', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                                    {item.image_url ? <img src={item.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (isProduct ? <Package style={{ color: '#4b5563' }} size={24} /> : <Briefcase style={{ color: '#4b5563' }} size={24} />)}
                                                 </div>
-                                                <h3 style={{ fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9rem' }}>{item.name}</h3>
-                                                <p style={{ color: '#34d399', fontWeight: 700, fontSize: '1rem' }}>R$ {item.price.toFixed(2)}</p>
-                                                <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(0,0,0,0.6)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', color: isProduct && (parseInt(stockDisplay) || 0) <= 0 ? '#ef4444' : isProduct ? '#d1d5db' : '#60a5fa', backdropFilter: 'blur(4px)' }}>{stockDisplay}</div>
+                                                <h3 style={{ fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.8rem', marginBottom: '2px' }}>{item.name}</h3>
+                                                <p style={{ color: '#34d399', fontWeight: 700, fontSize: '0.9rem', margin: 0 }}>R$ {item.price.toFixed(2)}</p>
+                                                <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', background: 'rgba(0,0,0,0.6)', padding: '2px 4px', borderRadius: '4px', fontSize: '0.65rem', color: isProduct && (parseInt(stockDisplay) || 0) <= 0 ? '#ef4444' : isProduct ? '#d1d5db' : '#60a5fa', backdropFilter: 'blur(4px)' }}>{stockDisplay}</div>
                                             </div>
                                         );
                                     })}
@@ -625,7 +693,7 @@ export default function SalesPDVPage() {
                         </div>
 
                         {/* Right: Cart & Checkout */}
-                        <div className="sales-cart" style={{ ...glassStyle, background: 'rgba(0,0,0,0.2)' }}>
+                        <div className={`sales-cart ${mobileTab === 'CATALOG' ? 'mobile-hidden' : ''} mobile-full-width`} style={{ ...glassStyle, background: 'rgba(0,0,0,0.2)', width: '400px', display: 'flex', flexDirection: 'column' }}>
                             {/* Cart Header */}
                             <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
@@ -799,99 +867,185 @@ export default function SalesPDVPage() {
                             </button>
                         </div>
 
-                        <div className="table-responsive" style={{ flex: 1, overflowY: 'auto' }}>
-                            <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse' }}>
-                                <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                    <tr>
-                                        <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.8rem', textTransform: 'uppercase' }}>ID / Data</th>
-                                        <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cliente</th>
-                                        <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.8rem', textTransform: 'uppercase' }}>Vendedor</th>
-                                        <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.8rem', textTransform: 'uppercase' }}>Itens</th>
-                                        <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.8rem', textTransform: 'uppercase' }}>Pagamento</th>
-                                        <th style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af', fontSize: '0.8rem', textTransform: 'uppercase' }}>Total</th>
-                                        <th style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af', fontSize: '0.8rem', textTransform: 'uppercase' }}>Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredHistory.map(sale => (
-                                        <tr key={sale.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
-                                            <td style={{ padding: '1rem', color: 'white' }}>
-                                                <div style={{ fontWeight: 700 }}>#{sale.id.slice(0, 8)}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{new Date(sale.created_at).toLocaleDateString()} {new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-                                            </td>
-                                            <td style={{ padding: '1rem', color: '#d1d5db' }}>
-                                                {sale.clients?.name || 'Cliente Balcão'}
-                                            </td>
-                                            <td style={{ padding: '1rem', color: '#d1d5db' }}>
-                                                {sale.employees?.name || '-'}
-                                            </td>
-                                            <td style={{ padding: '1rem', color: '#9ca3af', fontSize: '0.85rem' }}>
-                                                {sale.sale_items?.map((si: any, idx: number) => (
-                                                    <div key={idx}>
-                                                        {si.quantity}x {si.products?.name || si.services?.name || 'Item'}
-                                                    </div>
-                                                ))}
-                                                {sale.discount > 0 && (
-                                                    <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px' }}>
-                                                        - Desconto: R$ {sale.discount.toFixed(2)}
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <span style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', color: '#d1d5db' }}>
-                                                    {sale.payment_method}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', color: '#34d399', fontWeight: 700 }}>
-                                                R$ {sale.total_amount.toFixed(2)}
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                                    <Button
-                                                        title="Imprimir Recibo"
-                                                        onClick={() => { setSelectedSaleForReceipt(sale); setReceiptModalOpen(true); }}
-                                                        style={{ padding: '8px', height: 'auto', background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: '#3b82f6' }}
-                                                    >
-                                                        <Printer size={16} />
-                                                    </Button>
-
-                                                    {historyTab === 'QUOTES' && (
-                                                        <Button
-                                                            title="Converter em Venda"
-                                                            onClick={() => setPendingAction({ type: 'CONVERT', sale })}
-                                                            style={{ padding: '8px', height: 'auto', background: 'rgba(16, 185, 129, 0.1)', border: 'none', color: '#10b981' }}
-                                                        >
-                                                            <CheckCircle size={16} />
-                                                        </Button>
-                                                    )}
-
-                                                    <Button
-                                                        title="Editar"
-                                                        onClick={() => setPendingAction({ type: 'EDIT', sale })}
-                                                        style={{ padding: '8px', height: 'auto', background: 'rgba(251, 191, 36, 0.1)', border: 'none', color: '#fbbf24' }}
-                                                    >
-                                                        <Edit size={16} />
-                                                    </Button>
-                                                    <Button
-                                                        title="Cancelar/Excluir"
-                                                        onClick={() => setPendingAction({ type: 'DELETE', sale })}
-                                                        style={{ padding: '8px', height: 'auto', background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444' }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filteredHistory.length === 0 && (
+                        {/* Desktop Table */}
+                        <div className="desktop-table-view" style={{ flex: 1, overflowY: 'auto' }}>
+                            <div className="table-responsive">
+                                <table style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse' }}>
+                                    <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
                                         <tr>
-                                            <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
-                                                Nenhum registro encontrado.
-                                            </td>
+                                            <th className="responsive-table-header">ID / Data</th>
+                                            <th className="responsive-table-header">Cliente</th>
+                                            <th className="responsive-table-header">Vendedor</th>
+                                            <th className="responsive-table-header">Itens</th>
+                                            <th className="responsive-table-header">Pagamento</th>
+                                            <th className="responsive-table-header" style={{ textAlign: 'right' }}>Total</th>
+                                            <th className="responsive-table-header" style={{ textAlign: 'right' }}>Ações</th>
                                         </tr>
-                                    )}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {filteredHistory.map(sale => (
+                                            <tr key={sale.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }} onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'} onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}>
+                                                <td className="responsive-table-cell">
+                                                    <div style={{ fontWeight: 700 }}>#{sale.id.slice(0, 8)}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{new Date(sale.created_at).toLocaleDateString()} {new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                </td>
+                                                <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
+                                                    {sale.clients?.name || 'Cliente Balcão'}
+                                                </td>
+                                                <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
+                                                    {sale.employees?.name || '-'}
+                                                </td>
+                                                <td className="responsive-table-cell" style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+                                                    {sale.sale_items?.map((si: any, idx: number) => (
+                                                        <div key={idx}>
+                                                            {si.quantity}x {si.products?.name || si.services?.name || 'Item'}
+                                                        </div>
+                                                    ))}
+                                                    {sale.discount > 0 && (
+                                                        <div style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '4px' }}>
+                                                            - Desconto: R$ {sale.discount.toFixed(2)}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="responsive-table-cell">
+                                                    <span style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', color: '#d1d5db' }}>
+                                                        {sale.payment_method}
+                                                    </span>
+                                                </td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right', color: '#34d399', fontWeight: 700 }}>
+                                                    R$ {sale.total_amount.toFixed(2)}
+                                                </td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                                        <Button
+                                                            title="Imprimir Recibo"
+                                                            onClick={() => { setSelectedSaleForReceipt(sale); setReceiptModalOpen(true); }}
+                                                            style={{ padding: '8px', height: 'auto', background: 'rgba(59, 130, 246, 0.1)', border: 'none', color: '#3b82f6' }}
+                                                        >
+                                                            <Printer size={16} />
+                                                        </Button>
+
+                                                        {historyTab === 'QUOTES' && (
+                                                            <Button
+                                                                title="Converter em Venda"
+                                                                onClick={() => setPendingAction({ type: 'CONVERT', sale })}
+                                                                style={{ padding: '8px', height: 'auto', background: 'rgba(16, 185, 129, 0.1)', border: 'none', color: '#10b981' }}
+                                                            >
+                                                                <CheckCircle size={16} />
+                                                            </Button>
+                                                        )}
+
+                                                        <Button
+                                                            title="Editar"
+                                                            onClick={() => setPendingAction({ type: 'EDIT', sale })}
+                                                            style={{ padding: '8px', height: 'auto', background: 'rgba(251, 191, 36, 0.1)', border: 'none', color: '#fbbf24' }}
+                                                        >
+                                                            <Edit size={16} />
+                                                        </Button>
+                                                        <Button
+                                                            title="Cancelar/Excluir"
+                                                            onClick={() => setPendingAction({ type: 'DELETE', sale })}
+                                                            style={{ padding: '8px', height: 'auto', background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444' }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {filteredHistory.length === 0 && (
+                                            <tr>
+                                                <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>
+                                                    Nenhum registro encontrado.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="mobile-card-view">
+                            <div style={{ padding: '1rem', paddingBottom: '3rem' }}>
+                                {filteredHistory.map(sale => (
+                                    <div key={sale.id} className="mobile-card">
+                                        {/* Header */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
+                                            <div>
+                                                <div style={{ fontWeight: 700, color: 'white' }}>#{sale.id.slice(0, 8)}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                                                    {new Date(sale.created_at).toLocaleDateString()} {new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <div style={{ fontWeight: 700, color: '#34d399', fontSize: '1.1rem' }}>R$ {sale.total_amount.toFixed(2)}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{sale.payment_method}</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Info Rows */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem' }}>
+                                            <div>
+                                                <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700 }}>Cliente</span>
+                                                <div style={{ color: '#d1d5db', fontSize: '0.9rem' }}>{sale.clients?.name || 'Cliente Balcão'}</div>
+                                            </div>
+                                            <div>
+                                                <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700 }}>Vendedor</span>
+                                                <div style={{ color: '#d1d5db', fontSize: '0.9rem' }}>{sale.employees?.name || '-'}</div>
+                                            </div>
+                                        </div>
+
+                                        {/* Items */}
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>Itens</span>
+                                            {sale.sale_items?.map((si: any, idx: number) => (
+                                                <div key={idx} style={{ color: '#d1d5db', fontSize: '0.85rem' }}>
+                                                    <span style={{ color: '#9ca3af' }}>{si.quantity}x</span> {si.products?.name || si.services?.name || 'Item'}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                            <Button
+                                                onClick={() => { setSelectedSaleForReceipt(sale); setReceiptModalOpen(true); }}
+                                                style={{ flex: 1, height: '36px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.2)', color: '#3b82f6', padding: 0 }}
+                                            >
+                                                <Printer size={16} />
+                                            </Button>
+
+                                            {historyTab === 'QUOTES' && (
+                                                <Button
+                                                    onClick={() => setPendingAction({ type: 'CONVERT', sale })}
+                                                    style={{ flex: 1, height: '36px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', padding: 0 }}
+                                                >
+                                                    <CheckCircle size={16} />
+                                                </Button>
+                                            )}
+
+                                            <Button
+                                                onClick={() => setPendingAction({ type: 'EDIT', sale })}
+                                                style={{ flex: 1, height: '36px', background: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.2)', color: '#fbbf24', padding: 0 }}
+                                            >
+                                                <Edit size={16} />
+                                            </Button>
+
+                                            <Button
+                                                onClick={() => setPendingAction({ type: 'DELETE', sale })}
+                                                style={{ flex: 1, height: '36px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: 0 }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {filteredHistory.length === 0 && (
+                                    <div style={{ textAlign: 'center', color: '#6b7280', padding: '2rem' }}>
+                                        Nenhum registro encontrado.
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )
@@ -912,29 +1066,28 @@ export default function SalesPDVPage() {
                                         : 'Os itens serão carregados no carrinho para ajustes. A versão original será substituída ao finalizar.'}
                                 </p>
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                                <Button
-                                    onClick={() => setPendingAction(null)}
-                                    style={{ background: 'transparent', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)' }}
-                                >
-                                    Cancelar
-                                </Button>
-                                <Button
-                                    onClick={confirmAction}
-                                    disabled={processing}
-                                    style={{
-                                        background: pendingAction.type === 'DELETE' ? '#ef4444' : '#10b981',
-                                        color: 'white',
-                                        fontWeight: 700
-                                    }}
-                                >
-                                    {processing ? 'Processando...' : 'Confirmar'}
-                                </Button>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <Button onClick={() => setPendingAction(null)} style={{ flex: 1, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', color: 'white' }}>Cancelar</Button>
+                                <Button onClick={confirmAction} style={{ flex: 1, background: 'var(--color-primary)', border: 'none', color: 'white' }}>Confirmar</Button>
                             </div>
                         </div>
                     </div>
                 )
             }
-        </div >
+
+            {/* Internal Notification Toast */}
+            {notification && (
+                <div style={{
+                    position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
+                    background: '#10b981', color: 'white', padding: '12px 24px', borderRadius: '24px',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    zIndex: 200, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    animation: 'fadeIn 0.3s ease-out'
+                }}>
+                    <CheckCircle size={18} />
+                    {notification}
+                </div>
+            )}
+        </div>
     );
 }

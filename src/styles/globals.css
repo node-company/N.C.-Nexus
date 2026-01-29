@@ -37,11 +37,16 @@
   margin: 0;
 }
 
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
 body {
   background-color: var(--color-background);
   color: var(--color-text-main);
   font-family: var(--font-main);
-  overflow-x: hidden;
   line-height: 1.6;
 }
 
@@ -70,11 +75,23 @@ a {
 .dashboard-sidebar {
   width: 250px;
   height: 100vh;
+  /* Fallback */
+  height: 100dvh;
+  /* Dynamic Viewport */
   position: fixed;
   left: 0;
   top: 0;
   z-index: 50;
   transition: transform 0.3s ease-in-out;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Sticky Header */
+.dashboard-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
 }
 
 .dashboard-main {
@@ -113,6 +130,8 @@ a {
   .dashboard-sidebar {
     transform: translateX(-100%);
     /* Hidden by default on mobile */
+    padding-bottom: 5rem !important;
+    /* Prevent cut-off */
   }
 
   .dashboard-sidebar.open {
@@ -124,10 +143,28 @@ a {
   }
 
   /* Reduce padding on mobile */
-  .dashboard-header,
   .dashboard-content {
     padding-left: 1rem !important;
     padding-right: 1rem !important;
+    padding-top: 100px !important;
+    /* Space for Fixed Header */
+  }
+
+  .dashboard-header {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 40;
+    border-radius: 0 !important;
+    margin-bottom: 0 !important;
+    backdrop-filter: blur(20px) !important;
+    /* Stronger blur for overlay feeling */
+    background: rgba(10, 10, 15, 0.8) !important;
+    /* Slightly darker/opaque for legibility */
   }
 
   .mobile-only {
@@ -144,4 +181,140 @@ a {
   width: 100%;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive Table Elements */
+.responsive-table-header {
+  padding: 1.5rem 2rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  white-space: nowrap;
+}
+
+.responsive-table-cell {
+  padding: 1.5rem 2rem;
+  color: white;
+  vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+
+  .responsive-table-header,
+  .responsive-table-cell {
+    padding: 1rem 1rem !important;
+    /* Reduced padding for mobile */
+  }
+
+  /* Optional: Adjust font size for mobile table content if needed */
+  .responsive-table-cell {
+    font-size: 0.9rem;
+  }
+}
+
+/* Mobile Card Layout System */
+.desktop-table-view {
+  display: block;
+}
+
+.mobile-card-view {
+  display: none;
+}
+
+.mobile-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mobile-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 0.75rem;
+}
+
+.mobile-card-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.mobile-card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+.mobile-card-value {
+  font-size: 0.95rem;
+  color: white;
+  font-weight: 500;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .desktop-table-view {
+    display: none !important;
+  }
+
+  .mobile-card-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+/* Strict Vertical Mobile Utilities */
+@media (max-width: 768px) {
+  .mobile-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 1rem !important;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  .mobile-padding {
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+    padding-top: 3rem !important;
+    padding-bottom: 3rem !important;
+  }
+
+  .mobile-text-center {
+    text-align: center !important;
+  }
+
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  /* Specific Resets */
+  .hero-container {
+    padding-top: 2rem !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-hidden {
+    display: none !important;
+  }
 }

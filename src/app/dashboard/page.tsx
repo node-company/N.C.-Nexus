@@ -23,8 +23,7 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    TooltipProps
+    ResponsiveContainer
 } from "recharts";
 
 // Types
@@ -58,7 +57,8 @@ interface LowStockProduct {
 }
 
 // Custom Tooltip for Chart
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+// Custom Tooltip for Chart
+const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
         return (
             <div style={{ background: 'rgba(23, 23, 23, 0.9)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '12px', backdropFilter: 'blur(4px)' }}>
@@ -267,7 +267,7 @@ export default function DashboardPage() {
             </div>
 
             {/* KPI Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
                 {/* Cards mantidos iguais... */}
                 {/* Sales Today */}
                 <div style={cardStyle}>
@@ -414,7 +414,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Dashboard Content Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+            <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                 {/* Left Column: Quick Actions & Recent Sales */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
@@ -424,7 +424,7 @@ export default function DashboardPage() {
                             <TrendingUp size={18} color="#34d399" />
                             Acesso Rápido
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+                        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
                             <button onClick={() => router.push('/dashboard/sales')} style={{ ...glassStyle, padding: '1.5rem', border: '1px solid rgba(52, 211, 153, 0.3)', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
                                 <div style={{ padding: '12px', background: 'rgba(52, 211, 153, 0.2)', borderRadius: '50%', color: '#34d399' }}>
                                     <ShoppingCart size={24} />

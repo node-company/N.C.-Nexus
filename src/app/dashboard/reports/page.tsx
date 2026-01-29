@@ -424,58 +424,74 @@ export default function ReportsPage() {
     };
 
     return (
-        <div style={{ maxWidth: "1200px", margin: "0 auto", paddingBottom: "4rem", animation: 'fadeIn 0.6s ease' }}>
+        <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', paddingBottom: '3rem', animation: 'fadeIn 0.6s ease', overflowX: 'hidden' }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                     <h1 style={{ fontSize: '2.25rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
-                        Relatórios Inteligentes
+                        Relatórios
                     </h1>
-                    <p style={{ color: '#9ca3af', marginTop: '0.25rem' }}>Análise detalhada de performance e resultados.</p>
+                    <p style={{ color: '#9ca3af', marginTop: '0.25rem' }}>Análise detalhada de performance.</p>
                 </div>
                 <button
                     onClick={handleExportCSV}
                     style={{
                         background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px',
                         padding: '10px 16px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                        flexShrink: 0
                     }}
                 >
-                    <Download size={18} /> Exportar CSV
+                    <Download size={18} /> <span className="desktop-only">Exportar CSV</span><span className="mobile-only">CSV</span>
                 </button>
             </div>
 
             {/* Controls Bar */}
-            <div style={{ ...glassStyle, padding: '1rem', marginBottom: '2rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '4px' }}>
-                    <button onClick={() => setReportType('SALES')} style={buttonStyle(reportType === 'SALES', '#34d399')}>
-                        <TrendingUp size={18} /> Vendas
-                    </button>
-                    <button onClick={() => setReportType('FINANCIAL')} style={buttonStyle(reportType === 'FINANCIAL', '#f97316')}>
-                        <DollarSign size={18} /> Financeiro
-                    </button>
-                    <button onClick={() => setReportType('CASH')} style={buttonStyle(reportType === 'CASH', '#3b82f6')}>
-                        <Wallet size={18} /> Caixa
-                    </button>
-                    <button onClick={() => setReportType('PROFIT')} style={buttonStyle(reportType === 'PROFIT', '#a855f7')}>
-                        <PieChart size={18} /> Lucros
-                    </button>
-                    <button onClick={() => setReportType('STOCK')} style={buttonStyle(reportType === 'STOCK', '#ec4899')}>
-                        <Package size={18} /> Estoque
-                    </button>
-                    <button onClick={() => setReportType('EMPLOYEES')} style={buttonStyle(reportType === 'EMPLOYEES', '#8b5cf6')}>
-                        <Users size={18} /> Funcionários
-                    </button>
+            <div style={{ ...glassStyle, padding: '1.5rem', marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                {/* 1. Report Type Selector (Vertical Dropdown for Mobile) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase' }}>Tipo de Relatório</label>
+                    <div style={{ position: 'relative', width: '100%' }}>
+                        <select
+                            value={reportType}
+                            onChange={(e) => setReportType(e.target.value as any)}
+                            style={{
+                                width: '100%', padding: '16px', fontSize: '1rem', fontWeight: 600,
+                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px',
+                                color: 'white', appearance: 'none', cursor: 'pointer', outline: 'none'
+                            }}
+                        >
+                            <option value="SALES" style={{ color: 'black' }}>Vendas</option>
+                            <option value="FINANCIAL" style={{ color: 'black' }}>Financeiro</option>
+                            <option value="CASH" style={{ color: 'black' }}>Fluxo de Caixa</option>
+                            <option value="PROFIT" style={{ color: 'black' }}>Lucros e Resultados</option>
+                            <option value="STOCK" style={{ color: 'black' }}>Estoque</option>
+                            <option value="EMPLOYEES" style={{ color: 'black' }}>Equipe / Colaboradores</option>
+                        </select>
+                        <div style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#9ca3af' }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                    </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#9ca3af' }}>
-                        <Calendar size={16} />
-                        <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>Período:</span>
+                {/* 2. Date Filter (Stacked Vertical) */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#9ca3af', marginBottom: '0.5rem' }}>
+                        <Calendar size={18} />
+                        <span style={{ fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase' }}>Período de Análise</span>
                     </div>
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
-                    <span style={{ color: '#6b7280' }}>até</span>
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#6b7280' }}>Data Inicial</label>
+                            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={{ ...inputStyle, padding: '14px', borderRadius: '10px' }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label style={{ fontSize: '0.8rem', color: '#6b7280' }}>Data Final</label>
+                            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={{ ...inputStyle, padding: '14px', borderRadius: '10px' }} />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -489,190 +505,272 @@ export default function ReportsPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
                     {/* Summary KPI */}
-                    <div style={{ ...glassStyle, padding: '1.5rem', borderLeft: '4px solid var(--color-primary)', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                        <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%' }}>
-                            <FileText size={32} color="var(--color-primary)" />
+                    <div style={{ ...glassStyle, padding: '2rem', borderLeft: 'none', borderTop: '4px solid var(--color-primary)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', textAlign: 'center' }}>
+                        <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', marginBottom: '0.5rem' }}>
+                            <FileText size={40} color="var(--color-primary)" />
                         </div>
                         <div>
-                            <p style={{ color: '#9ca3af', fontWeight: 600, fontSize: '0.9rem', textTransform: 'uppercase' }}>{summary.label}</p>
-                            <h2 style={{ color: 'white', fontSize: '2rem', fontWeight: 700, margin: 0 }}>{summary.value}</h2>
+                            <p style={{ color: '#9ca3af', fontWeight: 700, fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{summary.label}</p>
+                            <h2 style={{ color: 'white', fontSize: '2.5rem', fontWeight: 800, margin: '0.5rem 0 0 0' }}>{summary.value}</h2>
                         </div>
                     </div>
 
                     {/* CHART CONTAINER */}
                     {chartData.length > 0 && (
-                        <div style={{ ...glassStyle, padding: '1.5rem', height: '400px' }}>
-                            <h3 style={{ color: 'white', fontSize: '1.1rem', marginBottom: '1.5rem', fontWeight: 600 }}>
-                                {reportType === 'SALES' && 'Evolução de Vendas Diárias'}
-                                {reportType === 'FINANCIAL' && 'Entradas vs Saídas Diárias'}
-                                {reportType === 'CASH' && 'Evolução de Saldo em Caixa'}
-                                {reportType === 'PROFIT' && 'Análise de Lucros e Resultados'}
-                                {reportType === 'STOCK' && 'Top Produtos Mais Vendidos'}
-                                {reportType === 'EMPLOYEES' && 'Ranking de Vendas por Funcionário'}
+                        <div style={{ ...glassStyle, padding: '1.5rem', display: 'block', maxWidth: '100%', overflowX: 'hidden' }}>
+                            <h3 style={{
+                                color: 'white', fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: 700,
+                                textAlign: 'center', lineHeight: 1.4, paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)'
+                            }}>
+                                {reportType === 'SALES' && 'Evolução de Vendas'}
+                                {reportType === 'FINANCIAL' && 'Entradas vs Saídas'}
+                                {reportType === 'CASH' && 'Saldo em Caixa'}
+                                {reportType === 'PROFIT' && 'Lucros e Resultados'}
+                                {reportType === 'STOCK' && 'Produtos Mais Vendidos'}
+                                {reportType === 'EMPLOYEES' && 'Vendas por Equipe'}
                             </h3>
-                            <ResponsiveContainer width="100%" height="85%">
-                                {reportType === 'SALES' ? (
-                                    <BarChart data={chartData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                        <XAxis dataKey="name" stroke="#6b7280" />
-                                        <YAxis stroke="#6b7280" />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
-                                        <Bar dataKey="value" name="Vendas" fill="#34d399" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                ) : reportType === 'FINANCIAL' ? (
-                                    <BarChart data={chartData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                        <XAxis dataKey="name" stroke="#6b7280" />
-                                        <YAxis stroke="#6b7280" />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
-                                        <Legend />
-                                        <Bar dataKey="income" name="Entradas" fill="#34d399" radius={[4, 4, 0, 0]} />
-                                        <Bar dataKey="expense" name="Saídas" fill="#f87171" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                ) : reportType === 'CASH' ? (
-                                    <AreaChart data={chartData}>
-                                        <defs>
-                                            <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                                                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                        <XAxis dataKey="name" stroke="#6b7280" />
-                                        <YAxis stroke="#6b7280" />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
-                                        <Area type="monotone" dataKey="balance" name="Saldo Acumulado" stroke="#3b82f6" fillOpacity={1} fill="url(#colorBalance)" />
-                                    </AreaChart>
-                                ) : reportType === 'PROFIT' ? (
-                                    <ComposedChart data={chartData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                                        <XAxis dataKey="name" stroke="#6b7280" />
-                                        <YAxis stroke="#6b7280" />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
-                                        <Legend />
-                                        <Bar dataKey="income" name="Receita" fill="#34d399" barSize={20} radius={[4, 4, 0, 0]} stackId="a" />
-                                        <Bar dataKey="expense" name="Despesa" fill="#f87171" barSize={20} radius={[4, 4, 0, 0]} stackId="a" />
-                                        <Line type="monotone" dataKey="profit" name="Lucro Líquido" stroke="#a855f7" strokeWidth={3} dot={{ r: 4 }} />
-                                    </ComposedChart>
-                                ) : reportType === 'STOCK' ? (
-                                    <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                                        <XAxis type="number" stroke="#6b7280" />
-                                        <YAxis dataKey="name" type="category" stroke="#6b7280" width={100} tick={{ fontSize: 11 }} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
-                                        <Bar dataKey="value" name="Qtd. Vendida" fill="#ec4899" radius={[0, 4, 4, 0]} />
-                                    </BarChart>
-                                ) : ( // EMPLOYEES
-                                    <BarChart data={chartData} layout="vertical" margin={{ left: 20 }}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                                        <XAxis type="number" stroke="#6b7280" />
-                                        <YAxis dataKey="name" type="category" stroke="#6b7280" width={100} tick={{ fontSize: 11 }} />
-                                        <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
-                                        <Bar dataKey="value" name="Vendas" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
-                                    </BarChart>
-                                )}
-                            </ResponsiveContainer>
+                            <div style={{ width: '100%', height: '400px', position: 'relative' }}>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    {reportType === 'SALES' ? (
+                                        <BarChart data={chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                            <XAxis dataKey="name" stroke="#6b7280" style={{ fontSize: '0.8rem' }} />
+                                            <YAxis stroke="#6b7280" style={{ fontSize: '0.8rem' }} width={40} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                                            <Bar dataKey="value" name="Vendas" fill="#34d399" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    ) : reportType === 'FINANCIAL' ? (
+                                        <BarChart data={chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                            <XAxis dataKey="name" stroke="#6b7280" style={{ fontSize: '0.8rem' }} />
+                                            <YAxis stroke="#6b7280" style={{ fontSize: '0.8rem' }} width={40} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                                            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                            <Bar dataKey="income" name="Entradas" fill="#34d399" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="expense" name="Saídas" fill="#f87171" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    ) : reportType === 'CASH' ? (
+                                        <AreaChart data={chartData}>
+                                            <defs>
+                                                <linearGradient id="colorBalance" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                            <XAxis dataKey="name" stroke="#6b7280" style={{ fontSize: '0.8rem' }} />
+                                            <YAxis stroke="#6b7280" style={{ fontSize: '0.8rem' }} width={40} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                                            <Area type="monotone" dataKey="balance" name="Saldo Acumulado" stroke="#3b82f6" fillOpacity={1} fill="url(#colorBalance)" />
+                                        </AreaChart>
+                                    ) : reportType === 'PROFIT' ? (
+                                        <ComposedChart data={chartData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                            <XAxis dataKey="name" stroke="#6b7280" style={{ fontSize: '0.8rem' }} />
+                                            <YAxis stroke="#6b7280" style={{ fontSize: '0.8rem' }} width={40} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                                            <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                                            <Bar dataKey="income" name="Receita" fill="#34d399" barSize={20} radius={[4, 4, 0, 0]} stackId="a" />
+                                            <Bar dataKey="expense" name="Despesa" fill="#f87171" barSize={20} radius={[4, 4, 0, 0]} stackId="a" />
+                                            <Line type="monotone" dataKey="profit" name="Lucro Líquido" stroke="#a855f7" strokeWidth={3} dot={{ r: 4 }} />
+                                        </ComposedChart>
+                                    ) : reportType === 'STOCK' ? (
+                                        <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 30 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                            <XAxis type="number" stroke="#6b7280" style={{ fontSize: '0.8rem' }} />
+                                            <YAxis dataKey="name" type="category" stroke="#6b7280" width={100} tick={{ fontSize: 10 }} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                                            <Bar dataKey="value" name="Qtd. Vendida" fill="#ec4899" radius={[0, 4, 4, 0]} />
+                                        </BarChart>
+                                    ) : ( // EMPLOYEES
+                                        <BarChart data={chartData} layout="vertical" margin={{ left: 0, right: 30 }}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                            <XAxis type="number" stroke="#6b7280" style={{ fontSize: '0.8rem' }} />
+                                            <YAxis dataKey="name" type="category" stroke="#6b7280" width={100} tick={{ fontSize: 10 }} />
+                                            <Tooltip contentStyle={{ backgroundColor: '#1f2937', borderColor: '#374151', color: 'white' }} />
+                                            <Bar dataKey="value" name="Vendas" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+                                        </BarChart>
+                                    )}
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     )}
 
                     {/* Table Data */}
                     <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                        <div className="table-responsive">
-                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
-                                <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
-                                    <tr>
-                                        {['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType) ? (
-                                            <>
-                                                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Data</th>
-                                                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Descrição</th>
-                                                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Categoria</th>
-                                                <th style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Valor</th>
-                                            </>
-                                        ) : reportType === 'STOCK' ? (
-                                            <>
-                                                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Produto</th>
-                                                <th style={{ padding: '1rem', textAlign: 'center', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Tamanho</th>
-                                                <th style={{ padding: '1rem', textAlign: 'center', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Qtd. Vendida</th>
-                                                {/* <th style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Receita Total</th> */}
-                                                <th style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Estoque Atual</th>
-                                            </>
-                                        ) : reportType === 'EMPLOYEES' ? (
-                                            <>
-                                                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Funcionário</th>
-                                                <th style={{ padding: '1rem', textAlign: 'center', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Qtd. Vendas</th>
-                                                <th style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Total Vendido</th>
-                                                <th style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Comissão</th>
-                                            </>
-                                        ) : ( // SALES
-                                            <>
-                                                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Data</th>
-                                                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Cliente</th>
-                                                <th style={{ padding: '1rem', textAlign: 'left', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Pagamento</th>
-                                                <th style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af', fontSize: '0.75rem', textTransform: 'uppercase' }}>Valor</th>
-                                            </>
-                                        )}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {reportType === 'SALES' && salesData.map(sale => (
-                                        <tr key={sale.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <td style={{ padding: '1rem', color: '#d1d5db' }}>{format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}</td>
-                                            <td style={{ padding: '1rem', color: 'white', fontWeight: 500 }}>{sale.client_name}</td>
-                                            <td style={{ padding: '1rem' }}>
-                                                <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', color: '#9ca3af' }}>
-                                                    {sale.payment_method}
-                                                </span>
-                                            </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: '#34d399' }}>R$ {sale.total_amount.toFixed(2)}</td>
+
+                        {/* Desktop Table View */}
+                        <div className="desktop-table-view">
+                            <div className="table-responsive">
+                                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                                    <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
+                                        <tr>
+                                            {['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType) ? (
+                                                <>
+                                                    <th className="responsive-table-header">Data</th>
+                                                    <th className="responsive-table-header">Descrição</th>
+                                                    <th className="responsive-table-header">Categoria</th>
+                                                    <th className="responsive-table-header" style={{ textAlign: 'right' }}>Valor</th>
+                                                </>
+                                            ) : reportType === 'STOCK' ? (
+                                                <>
+                                                    <th className="responsive-table-header">Produto</th>
+                                                    <th className="responsive-table-header" style={{ textAlign: 'center' }}>Tamanho</th>
+                                                    <th className="responsive-table-header" style={{ textAlign: 'center' }}>Qtd. Vendida</th>
+                                                    <th className="responsive-table-header" style={{ textAlign: 'right' }}>Estoque Atual</th>
+                                                </>
+                                            ) : reportType === 'EMPLOYEES' ? (
+                                                <>
+                                                    <th className="responsive-table-header">Funcionário</th>
+                                                    <th className="responsive-table-header" style={{ textAlign: 'center' }}>Qtd. Vendas</th>
+                                                    <th className="responsive-table-header" style={{ textAlign: 'right' }}>Total Vendido</th>
+                                                    <th className="responsive-table-header" style={{ textAlign: 'right' }}>Comissão</th>
+                                                </>
+                                            ) : ( // SALES
+                                                <>
+                                                    <th className="responsive-table-header">Data</th>
+                                                    <th className="responsive-table-header">Cliente</th>
+                                                    <th className="responsive-table-header">Pagamento</th>
+                                                    <th className="responsive-table-header" style={{ textAlign: 'right' }}>Valor</th>
+                                                </>
+                                            )}
                                         </tr>
-                                    ))}
+                                    </thead>
+                                    <tbody>
+                                        {reportType === 'SALES' && salesData.map(sale => (
+                                            <tr key={sale.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>{format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}</td>
+                                                <td className="responsive-table-cell" style={{ color: 'white', fontWeight: 500 }}>{sale.client_name}</td>
+                                                <td className="responsive-table-cell">
+                                                    <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', color: '#9ca3af' }}>
+                                                        {sale.payment_method}
+                                                    </span>
+                                                </td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right', fontWeight: 700, color: '#34d399' }}>R$ {sale.total_amount.toFixed(2)}</td>
+                                            </tr>
+                                        ))}
 
-                                    {['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType) && financialData.map(item => (
-                                        <tr key={item.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <td style={{ padding: '1rem', color: '#d1d5db' }}>{format(parseISO(item.date.includes('T') ? item.date.split('T')[0] : item.date), 'dd/MM/yyyy')}</td>
-                                            <td style={{ padding: '1rem', color: 'white', fontWeight: 500 }}>
-                                                {item.description}
-                                                <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>
-                                                    {item.source === 'SALE' ? 'Origem: Vendas' : 'Origem: Manual'}
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '1rem', color: '#9ca3af' }}>{item.category}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, color: item.type === 'INCOME' ? '#34d399' : '#f87171' }}>
-                                                {item.type === 'INCOME' ? '+' : '-'} R$ {item.amount.toFixed(2)}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                        {['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType) && financialData.map(item => (
+                                            <tr key={item.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>{format(parseISO(item.date.includes('T') ? item.date.split('T')[0] : item.date), 'dd/MM/yyyy')}</td>
+                                                <td className="responsive-table-cell" style={{ color: 'white', fontWeight: 500 }}>
+                                                    {item.description}
+                                                    <div style={{ fontSize: '0.7rem', color: '#6b7280' }}>
+                                                        {item.source === 'SALE' ? 'Origem: Vendas' : 'Origem: Manual'}
+                                                    </div>
+                                                </td>
+                                                <td className="responsive-table-cell" style={{ color: '#9ca3af' }}>{item.category}</td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right', fontWeight: 700, color: item.type === 'INCOME' ? '#34d399' : '#f87171' }}>
+                                                    {item.type === 'INCOME' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+                                                </td>
+                                            </tr>
+                                        ))}
 
-                                    {reportType === 'STOCK' && stockData.map(item => (
-                                        <tr key={`${item.id}-${item.size}`} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <td style={{ padding: '1rem', color: 'white', fontWeight: 500 }}>{item.name}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'center', color: '#d1d5db' }}>{item.size}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'center', color: '#ec4899', fontWeight: 700 }}>{item.quantity_sold}</td>
-                                            {/* <td style={{ padding: '1rem', textAlign: 'right', color: '#9ca3af' }}>R$ {item.total_revenue.toFixed(2)}</td> */}
-                                            <td style={{ padding: '1rem', textAlign: 'right', color: '#d1d5db' }}>{item.current_stock}</td>
-                                        </tr>
-                                    ))}
+                                        {reportType === 'STOCK' && stockData.map(item => (
+                                            <tr key={`${item.id}-${item.size}`} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td className="responsive-table-cell" style={{ color: 'white', fontWeight: 500 }}>{item.name}</td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'center', color: '#d1d5db' }}>{item.size}</td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'center', color: '#ec4899', fontWeight: 700 }}>{item.quantity_sold}</td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right', color: '#d1d5db' }}>{item.current_stock}</td>
+                                            </tr>
+                                        ))}
 
-                                    {reportType === 'EMPLOYEES' && employeeData.map(item => (
-                                        <tr key={item.employee_id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <td style={{ padding: '1rem', color: 'white', fontWeight: 500 }}>{item.name}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'center', color: '#d1d5db' }}>{item.sales_count}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', color: '#34d399', fontWeight: 700 }}>R$ {item.total_sales.toFixed(2)}</td>
-                                            <td style={{ padding: '1rem', textAlign: 'right', color: '#facc15' }}>R$ {item.total_commission.toFixed(2)}</td>
-                                        </tr>
-                                    ))}
-
-                                    {/* Empty */}
-                                    {((reportType === 'SALES' && salesData.length === 0) ||
-                                        (['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType) && financialData.length === 0) ||
-                                        (reportType === 'STOCK' && stockData.length === 0) ||
-                                        (reportType === 'EMPLOYEES' && employeeData.length === 0)) && (
-                                            <tr><td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Nenhum dado encontrado para o período.</td></tr>
-                                        )}
-
-                                </tbody>
-                            </table>
+                                        {reportType === 'EMPLOYEES' && employeeData.map(item => (
+                                            <tr key={item.employee_id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                <td className="responsive-table-cell" style={{ color: 'white', fontWeight: 500 }}>{item.name}</td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'center', color: '#d1d5db' }}>{item.sales_count}</td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right', color: '#34d399', fontWeight: 700 }}>R$ {item.total_sales.toFixed(2)}</td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right', color: '#facc15' }}>R$ {item.total_commission.toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+
+                        {/* Mobile Card View */}
+                        <div className="mobile-card-view">
+                            <div style={{ padding: '1rem' }}>
+                                {reportType === 'SALES' && salesData.map(sale => (
+                                    <div key={sale.id} className="mobile-card">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}</span>
+                                            <span style={{ fontWeight: 700, color: '#34d399' }}>R$ {sale.total_amount.toFixed(2)}</span>
+                                        </div>
+                                        <div style={{ fontWeight: 600, color: 'white', marginBottom: '0.5rem' }}>{sale.client_name}</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#9ca3af', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', display: 'inline-block' }}>
+                                            {sale.payment_method}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType) && financialData.map(item => (
+                                    <div key={item.id} className="mobile-card">
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{format(parseISO(item.date.includes('T') ? item.date.split('T')[0] : item.date), 'dd/MM/yyyy')}</span>
+                                            <span style={{ fontWeight: 700, color: item.type === 'INCOME' ? '#34d399' : '#f87171' }}>
+                                                {item.type === 'INCOME' ? '+' : '-'} R$ {item.amount.toFixed(2)}
+                                            </span>
+                                        </div>
+                                        <div style={{ fontWeight: 600, color: 'white', marginBottom: '0.25rem' }}>{item.description}</div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: '#6b7280' }}>
+                                            <span>{item.category}</span>
+                                            <span style={{ fontStyle: 'italic' }}>{item.source === 'SALE' ? 'Venda' : 'Manual'}</span>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {reportType === 'STOCK' && stockData.map(item => (
+                                    <div key={`${item.id}-${item.size}`} className="mobile-card">
+                                        <div style={{ fontWeight: 600, color: 'white', marginBottom: '0.5rem', fontSize: '1.1rem' }}>{item.name}</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>Tamanho</div>
+                                                <div style={{ color: 'white', fontWeight: 700 }}>{item.size}</div>
+                                            </div>
+                                            <div style={{ background: 'rgba(236, 72, 153, 0.1)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.7rem', color: '#ec4899' }}>Vendidos</div>
+                                                <div style={{ color: '#ec4899', fontWeight: 700 }}>{item.quantity_sold}</div>
+                                            </div>
+                                            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '8px', borderRadius: '8px', textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.7rem', color: '#9ca3af' }}>Estoque</div>
+                                                <div style={{ color: 'white', fontWeight: 700 }}>{item.current_stock}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {reportType === 'EMPLOYEES' && employeeData.map(item => (
+                                    <div key={item.employee_id} className="mobile-card">
+                                        <div style={{ fontWeight: 600, color: 'white', marginBottom: '1rem', fontSize: '1.1rem' }}>{item.name}</div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                            <div className="mobile-card-row">
+                                                <span className="mobile-card-label">Qtd. Vendas</span>
+                                                <span className="mobile-card-value">{item.sales_count}</span>
+                                            </div>
+                                            <div className="mobile-card-row">
+                                                <span className="mobile-card-label">Total Vendido</span>
+                                                <span className="mobile-card-value" style={{ color: '#34d399' }}>R$ {item.total_sales.toFixed(2)}</span>
+                                            </div>
+                                            <div className="mobile-card-row">
+                                                <span className="mobile-card-label">Comissão</span>
+                                                <span className="mobile-card-value" style={{ color: '#facc15' }}>R$ {item.total_commission.toFixed(2)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Empty State */}
+                        {((reportType === 'SALES' && salesData.length === 0) ||
+                            (['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType) && financialData.length === 0) ||
+                            (reportType === 'STOCK' && stockData.length === 0) ||
+                            (reportType === 'EMPLOYEES' && employeeData.length === 0)) && (
+                                <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>
+                                    Nenhum dado encontrado para o período.
+                                </div>
+                            )}
                     </div>
                 </div>
             )}

@@ -23,6 +23,7 @@ export default function ServicesPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const supabase = createClient();
     const router = useRouter();
+    const can_manage_services = true;
 
     useEffect(() => {
         fetchServices();
@@ -71,23 +72,6 @@ export default function ServicesPage() {
         borderRadius: '16px',
     };
 
-    const headerCellStyle = {
-        padding: '1.5rem 2rem',
-        textAlign: 'left' as const,
-        fontSize: '0.75rem',
-        fontWeight: 700,
-        color: '#9ca3af',
-        textTransform: 'uppercase' as const,
-        letterSpacing: '0.05em',
-        borderBottom: '1px solid rgba(255,255,255,0.05)'
-    };
-
-    const cellStyle = {
-        padding: '2rem 2rem', // Espaçamento Bem Longo (32px)
-        color: 'white',
-        verticalAlign: 'middle'
-    };
-
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem', animation: 'fadeIn 0.6s ease' }}>
             {/* Header Section */}
@@ -96,25 +80,27 @@ export default function ServicesPage() {
                     <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                         Serviços
                     </h1>
-                    <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Gerencie seu catálogo de serviços oferecidos.</p>
+                    <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Gerencie seu catálogo de serviços.</p>
                 </div>
-                <Link href="/dashboard/services/new">
-                    <Button style={{
-                        background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
-                        border: 'none',
-                        padding: '12px 24px',
-                        height: 'auto',
-                        fontSize: '1rem',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        boxShadow: '0 4px 14px 0 rgba(0,0,0,0.3)'
-                    }}>
-                        <Plus size={20} />
-                        Novo Serviço
-                    </Button>
-                </Link>
+                {can_manage_services && (
+                    <Link href="/dashboard/services/new">
+                        <Button style={{
+                            background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+                            border: 'none',
+                            padding: '12px 24px',
+                            height: 'auto',
+                            fontSize: '1rem',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            boxShadow: '0 4px 14px 0 rgba(0,0,0,0.3)'
+                        }}>
+                            <Plus size={20} />
+                            Novo Serviço
+                        </Button>
+                    </Link>
+                )}
             </div>
 
             {/* Search Bar */}
@@ -124,6 +110,7 @@ export default function ServicesPage() {
                 padding: '1rem',
                 display: 'flex',
                 alignItems: 'center',
+                width: '100%', // Added width: '100%'
                 maxWidth: '500px'
             }}>
                 <Search style={{ color: '#9ca3af', marginRight: '1rem' }} size={20} />
@@ -147,110 +134,156 @@ export default function ServicesPage() {
             {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem', color: '#6b7280' }}>
                     <div style={{ width: '3rem', height: '3rem', border: '3px solid rgba(255,255,255,0.1)', borderTopColor: 'var(--color-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '1rem' }}></div>
-                    <p>Carregando serviços...</p>
+                    <p>Carregando catálogo...</p>
                 </div>
             ) : (
                 <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                    <div className="table-responsive">
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr>
-                                    <th style={headerCellStyle}>Serviço</th>
-                                    <th style={headerCellStyle}>Preço Base</th>
-                                    <th style={headerCellStyle}>Duração</th>
-                                    <th style={headerCellStyle}>Status</th>
-                                    <th style={{ ...headerCellStyle, textAlign: 'right' }}>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredServices.map((service) => (
-                                    <tr key={service.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
-                                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                                <div style={{
-                                                    width: '80px', height: '80px', borderRadius: '12px',
-                                                    background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.05)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
-                                                }}>
-                                                    {service.image_url ? (
-                                                        <img src={service.image_url} alt={service.name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.9 }} />
-                                                    ) : (
-                                                        <Briefcase style={{ color: '#4b5563' }} size={32} />
-                                                    )}
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+
+                    {/* Desktop Table View */}
+                    <div className="desktop-table-view desktop-only">
+                        <div className="table-responsive">
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr>
+                                        <th className="responsive-table-header">Serviço</th>
+                                        <th className="responsive-table-header">Preço</th>
+                                        <th className="responsive-table-header">Duração</th>
+                                        <th className="responsive-table-header">Status</th>
+                                        <th className="responsive-table-header" style={{ textAlign: 'right' }}>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredServices.map((service) => (
+                                        <tr key={service.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <td className="responsive-table-cell">
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                                                     <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white' }}>{service.name}</span>
                                                     <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)', maxWidth: '300px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                        {service.description || "Sem descrição disponível."}
+                                                        {service.description || "Sem descrição."}
                                                     </span>
                                                 </div>
-                                            </div>
-                                        </td>
-                                        <td style={cellStyle}>
-                                            <span style={{ fontFamily: 'monospace', fontSize: '1.25rem', fontWeight: 600, color: '#e5e7eb' }}>
-                                                {new Intl.NumberFormat("pt-BR", {
-                                                    style: "currency",
-                                                    currency: "BRL",
-                                                }).format(service.price)}
-                                            </span>
-                                        </td>
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#9ca3af' }}>
-                                                <Clock size={16} />
-                                                <span style={{ fontSize: '1rem' }}>{service.duration_minutes || "-"} min</span>
-                                            </div>
-                                        </td>
-                                        <td style={cellStyle}>
-                                            <span style={{
-                                                padding: '6px 16px', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
-                                                border: service.active ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
-                                                background: service.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                color: service.active ? '#34d399' : '#f87171'
-                                            }}>
-                                                {service.active ? 'Ativo' : 'Inativo'}
-                                            </span>
-                                        </td>
-                                        <td style={{ ...cellStyle, textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                                                <Button
-                                                    onClick={() => router.push(`/dashboard/services/${service.id}`)}
-                                                    style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    title="Editar"
-                                                >
-                                                    <Edit size={18} />
-                                                </Button>
-                                                <Button
-                                                    onClick={() => handleDelete(service.id)}
-                                                    style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {filteredServices.length === 0 && (
-                            <div style={{ padding: '4rem', textAlign: 'center' }}>
-                                <div style={{ width: '4rem', height: '4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-                                    <Briefcase style={{ color: '#4b5563' }} size={32} />
-                                </div>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Nenhum serviço encontrado</h3>
-                                <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>Comece adicionando seu primeiro serviço.</p>
-                                <Link href="/dashboard/services/new">
-                                    <Button style={{ background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}>
-                                        Adicionar Serviço
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
+                                            </td>
+                                            <td className="responsive-table-cell">
+                                                <span style={{ fontFamily: 'monospace', fontSize: '1.25rem', fontWeight: 600, color: '#e5e7eb' }}>
+                                                    {new Intl.NumberFormat("pt-BR", {
+                                                        style: "currency",
+                                                        currency: "BRL",
+                                                    }).format(service.price)}
+                                                </span>
+                                            </td>
+                                            <td className="responsive-table-cell">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d1d5db' }}>
+                                                    <Clock size={16} />
+                                                    <span>{service.duration_minutes} min</span>
+                                                </div>
+                                            </td>
+                                            <td className="responsive-table-cell">
+                                                <span style={{
+                                                    padding: '6px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 500,
+                                                    background: service.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                    color: service.active ? '#34d399' : '#ef4444',
+                                                    border: service.active ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
+                                                }}>
+                                                    {service.active ? "Ativo" : "Inativo"}
+                                                </span>
+                                            </td>
+                                            <td className="responsive-table-cell" style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                                                    <Button
+                                                        onClick={() => router.push(`/dashboard/services/${service.id}`)}
+                                                        style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        title="Editar"
+                                                    >
+                                                        <Edit size={18} />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleDelete(service.id)}
+                                                        style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+
+                    {/* Mobile Card View */}
+                    <div className="mobile-card-view mobile-only">
+                        <div style={{ padding: '1rem' }}>
+                            {filteredServices.map((service) => (
+                                <div key={service.id} className="mobile-card">
+                                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white' }}>{service.name}</div>
+                                        <div style={{
+                                            fontSize: '0.85rem',
+                                            padding: '2px 8px',
+                                            borderRadius: '4px',
+                                            background: service.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                            color: service.active ? '#34d399' : '#ef4444'
+                                        }}>
+                                            {service.active ? "Ativo" : "Inativo"}
+                                        </div>
+                                    </div>
+                                    <div style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem', lineHeight: '1.4' }}>
+                                        {service.description || "Sem descrição."}
+                                    </div>
+
+                                    <div className="mobile-card-row">
+                                        <span className="mobile-card-label">Preço</span>
+                                        <span className="mobile-card-value" style={{ fontFamily: 'monospace', fontSize: '1.1rem' }}>
+                                            {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(service.price)}
+                                        </span>
+                                    </div>
+
+                                    <div className="mobile-card-row">
+                                        <span className="mobile-card-label">Duração</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'white' }}>
+                                            <Clock size={16} />
+                                            <span>{service.duration_minutes} min</span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                        <Button
+                                            onClick={() => router.push(`/dashboard/services/${service.id}`)}
+                                            style={{ flex: 1, height: '36px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                        >
+                                            <Edit size={16} /> Editar
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleDelete(service.id)}
+                                            style={{ flex: 1, height: '36px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                        >
+                                            <Trash2 size={16} /> Excluir
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {filteredServices.length === 0 && (
+                        <div style={{ padding: '4rem', textAlign: 'center' }}>
+                            <div style={{ width: '4rem', height: '4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                                <Briefcase style={{ color: '#4b5563' }} size={32} />
+                            </div>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Nenhum serviço encontrado</h3>
+                            <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>Comece adicionando seu primeiro serviço.</p>
+                            <Link href="/dashboard/services/new">
+                                <Button style={{ background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}>
+                                    Adicionar Serviço
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

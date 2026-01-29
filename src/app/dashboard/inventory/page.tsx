@@ -217,22 +217,7 @@ export default function InventoryPage() {
         borderRadius: '16px',
     };
 
-    const headerCellStyle = {
-        padding: '1.5rem 2rem',
-        textAlign: 'left' as const,
-        fontSize: '0.75rem',
-        fontWeight: 700,
-        color: '#9ca3af',
-        textTransform: 'uppercase' as const,
-        letterSpacing: '0.05em',
-        borderBottom: '1px solid rgba(255,255,255,0.05)'
-    };
 
-    const cellStyle = {
-        padding: '2rem 2rem',
-        color: 'white',
-        verticalAlign: 'middle'
-    };
 
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem', animation: 'fadeIn 0.6s ease' }}>
@@ -244,9 +229,9 @@ export default function InventoryPage() {
                 <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Controle de entradas, saídas e auditoria.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', alignItems: 'start' }}>
+            <div className="inventory-grid mobile-stack">
                 {/* Left: Product List */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
 
                     {/* Search */}
                     <div style={{
@@ -272,76 +257,138 @@ export default function InventoryPage() {
                         />
                     </div>
 
-                    {/* Table */}
+                    {/* Content */}
                     <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                        <div className="table-responsive">
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                <thead>
-                                    <tr>
-                                        <th style={headerCellStyle}>Produto</th>
-                                        <th style={headerCellStyle}>Variações / Estoque</th>
-                                        <th style={{ ...headerCellStyle, textAlign: 'right' }}>Ação</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredProducts.map((product) => (
-                                        <tr key={product.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
-                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                        >
-                                            <td style={cellStyle}>
-                                                <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>{product.name}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '4px' }}>ID: {product.id.slice(0, 8)}...</div>
-                                            </td>
-                                            <td style={cellStyle}>
-                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                                    {product.product_variants && product.product_variants.length > 0 ? (
-                                                        product.product_variants.map(v => (
-                                                            <div key={v.id} style={{
-                                                                padding: '6px 12px', borderRadius: '8px', fontSize: '0.875rem',
-                                                                display: 'flex', alignItems: 'center', gap: '8px',
-                                                                border: v.stock_quantity > 0 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
-                                                                background: v.stock_quantity > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-                                                                color: v.stock_quantity > 0 ? '#34d399' : '#f87171'
-                                                            }}>
-                                                                <span style={{ fontWeight: 700 }}>{v.size}</span>
-                                                                <span style={{ opacity: 0.3 }}>|</span>
-                                                                <span>{v.stock_quantity}</span>
-                                                            </div>
-                                                        ))
-                                                    ) : (
-                                                        <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Sem variantes</span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                            <td style={{ ...cellStyle, textAlign: 'right' }}>
-                                                {can_manage_products && (
-                                                    <Button
-                                                        onClick={() => openAdjustmentModal(product)}
-                                                        disabled={!product.product_variants || product.product_variants.length === 0}
-                                                        style={{
-                                                            background: 'transparent',
-                                                            border: '1px solid rgba(255,255,255,0.1)',
-                                                            color: '#d1d5db',
-                                                            fontSize: '0.875rem',
-                                                            padding: '8px 16px'
-                                                        }}
-                                                    >
-                                                        Ajustar
-                                                    </Button>
-                                                )}
-                                            </td>
+
+                        {/* Desktop Table View */}
+                        <div className="desktop-table-view desktop-only">
+                            <div className="table-responsive">
+                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                    <thead>
+                                        <tr>
+                                            <th className="responsive-table-header">Produto</th>
+                                            <th className="responsive-table-header">Variações / Estoque</th>
+                                            <th className="responsive-table-header" style={{ textAlign: 'right' }}>Ação</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {filteredProducts.length === 0 && !loading && (
-                                <p style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Nenhum produto encontrado.</p>
-                            )}
-                            {loading && (
-                                <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Carregando estoque...</div>
-                            )}
+                                    </thead>
+                                    <tbody>
+                                        {filteredProducts.map((product) => (
+                                            <tr key={product.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
+                                                onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                                onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                <td className="responsive-table-cell">
+                                                    <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>{product.name}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '4px' }}>ID: {product.id.slice(0, 8)}...</div>
+                                                </td>
+                                                <td className="responsive-table-cell">
+                                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                        {product.product_variants && product.product_variants.length > 0 ? (
+                                                            product.product_variants.map(v => (
+                                                                <div key={v.id} style={{
+                                                                    padding: '6px 12px', borderRadius: '8px', fontSize: '0.875rem',
+                                                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                                                    border: v.stock_quantity > 0 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                                                                    background: v.stock_quantity > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                                                                    color: v.stock_quantity > 0 ? '#34d399' : '#f87171'
+                                                                }}>
+                                                                    <span style={{ fontWeight: 700 }}>{v.size}</span>
+                                                                    <span style={{ opacity: 0.3 }}>|</span>
+                                                                    <span>{v.stock_quantity}</span>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Sem variantes</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right' }}>
+                                                    {can_manage_products && (
+                                                        <Button
+                                                            onClick={() => openAdjustmentModal(product)}
+                                                            disabled={!product.product_variants || product.product_variants.length === 0}
+                                                            style={{
+                                                                background: 'transparent',
+                                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                                color: '#d1d5db',
+                                                                fontSize: '0.875rem',
+                                                                padding: '8px 16px'
+                                                            }}
+                                                        >
+                                                            Ajustar
+                                                        </Button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
+
+                        {/* Mobile Card View */}
+                        <div className="mobile-card-view mobile-only">
+                            <div style={{ padding: '1rem' }}>
+                                {filteredProducts.map((product) => (
+                                    <div key={product.id} className="mobile-card">
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <div style={{ fontSize: '1.2rem', fontWeight: 600, color: 'white' }}>{product.name}</div>
+                                            <div style={{ fontSize: '0.8rem', color: '#6b7280', marginTop: '4px' }}>ID: {product.id.slice(0, 8)}...</div>
+                                        </div>
+
+                                        <div style={{ marginBottom: '1rem' }}>
+                                            <span className="mobile-card-label" style={{ display: 'block', marginBottom: '0.5rem' }}>Variações / Estoque</span>
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                {product.product_variants && product.product_variants.length > 0 ? (
+                                                    product.product_variants.map(v => (
+                                                        <div key={v.id} style={{
+                                                            padding: '6px 12px', borderRadius: '8px', fontSize: '0.875rem',
+                                                            display: 'flex', alignItems: 'center', gap: '8px',
+                                                            border: v.stock_quantity > 0 ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)',
+                                                            background: v.stock_quantity > 0 ? 'rgba(16, 185, 129, 0.05)' : 'rgba(239, 68, 68, 0.05)',
+                                                            color: v.stock_quantity > 0 ? '#34d399' : '#f87171'
+                                                        }}>
+                                                            <span style={{ fontWeight: 700 }}>{v.size}</span>
+                                                            <span style={{ opacity: 0.3 }}>|</span>
+                                                            <span>{v.stock_quantity}</span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <span style={{ color: '#6b7280', fontStyle: 'italic' }}>Sem variantes</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {can_manage_products && (
+                                            <Button
+                                                onClick={() => openAdjustmentModal(product)}
+                                                disabled={!product.product_variants || product.product_variants.length === 0}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '40px',
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                    color: '#d1d5db',
+                                                    fontSize: '0.9rem',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                            >
+                                                Ajustar Estoque
+                                            </Button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {filteredProducts.length === 0 && !loading && (
+                            <p style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Nenhum produto encontrado.</p>
+                        )}
+                        {loading && (
+                            <div style={{ padding: '3rem', textAlign: 'center', color: '#6b7280' }}>Carregando estoque...</div>
+                        )}
                     </div>
                 </div>
 

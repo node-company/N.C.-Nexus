@@ -28,6 +28,26 @@ export default function DashboardLayout({
         }
     }, [user, isLoading, router]);
 
+    // Scroll Lock on Mobile when Sidebar is open
+    useEffect(() => {
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        if (isMobile) {
+            if (isSidebarOpen) {
+                document.body.style.overflow = 'hidden';
+                document.documentElement.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
+            }
+        }
+
+        // Cleanup function to reset styles when component unmounts
+        return () => {
+            document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
+        };
+    }, [isSidebarOpen]);
+
     const checkSubscription = async () => {
         // ... existing checkSubscription logic (unchanged)
         // Skip check for now if just testing (or add logic to bypass locally)

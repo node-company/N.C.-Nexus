@@ -71,29 +71,12 @@ export default function ClientsPage() {
         borderRadius: '16px',
     };
 
-    const headerCellStyle = {
-        padding: '1.5rem 2rem',
-        textAlign: 'left' as const,
-        fontSize: '0.75rem',
-        fontWeight: 700,
-        color: '#9ca3af',
-        textTransform: 'uppercase' as const,
-        letterSpacing: '0.05em',
-        borderBottom: '1px solid rgba(255,255,255,0.05)'
-    };
-
-    const cellStyle = {
-        padding: '2rem 2rem', // Espaçamento Bem Longo (32px)
-        color: 'white',
-        verticalAlign: 'middle'
-    };
-
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem', animation: 'fadeIn 0.6s ease' }}>
             {/* Header Section */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                <div style={{ maxWidth: '100%' }}>
+                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word' }}>
                         Clientes
                     </h1>
                     <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Gerencie sua base de clientes.</p>
@@ -124,6 +107,7 @@ export default function ClientsPage() {
                 padding: '1rem',
                 display: 'flex',
                 alignItems: 'center',
+                width: '100%',
                 maxWidth: '500px'
             }}>
                 <Search style={{ color: '#9ca3af', marginRight: '1rem' }} size={20} />
@@ -151,93 +135,160 @@ export default function ClientsPage() {
                 </div>
             ) : (
                 <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                    <div className="table-responsive">
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr>
-                                    <th style={headerCellStyle}>Nome/Documento</th>
-                                    <th style={headerCellStyle}>Contato</th>
-                                    <th style={headerCellStyle}>Endereço</th>
-                                    <th style={{ ...headerCellStyle, textAlign: 'right' }}>Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredClients.map((client) => (
-                                    <tr key={client.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
-                                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
-                                    >
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                                <div style={{
-                                                    width: '60px', height: '60px', borderRadius: '50%',
-                                                    background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)', border: '1px solid rgba(255,255,255,0.05)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
-                                                }}>
-                                                    <User style={{ color: '#9ca3af' }} size={24} />
-                                                </div>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                                    <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>{client.name}</span>
-                                                    <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>{client.document || "Sem documento"}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                                {client.phone && (
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d1d5db', fontSize: '0.95rem' }}>
-                                                        <Phone size={16} style={{ color: '#4b5563' }} /> {client.phone}
-                                                    </div>
-                                                )}
-                                                {client.email && (
-                                                    <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{client.email}</div>
-                                                )}
-                                                {!client.phone && !client.email && <span style={{ color: '#6b7280', fontSize: '0.85rem', fontStyle: 'italic' }}>Sem contato</span>}
-                                            </div>
-                                        </td>
-                                        <td style={cellStyle}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#9ca3af' }}>
-                                                <MapPin size={16} style={{ color: '#4b5563' }} />
-                                                <span style={{ fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '250px' }}>{client.address || "-"}</span>
-                                            </div>
-                                        </td>
-                                        <td style={{ ...cellStyle, textAlign: 'right' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
-                                                <Button
-                                                    onClick={() => router.push(`/dashboard/clients/${client.id}`)}
-                                                    style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    title="Editar"
-                                                >
-                                                    <Edit size={18} />
-                                                </Button>
-                                                <Button
-                                                    onClick={() => handleDelete(client.id)}
-                                                    style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                    title="Excluir"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </Button>
-                                            </div>
-                                        </td>
+                    {/* Desktop Table View */}
+                    <div className="desktop-only" style={{ overflowX: 'auto' }}>
+                        <div className="table-responsive">
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr>
+                                        <th className="responsive-table-header">Nome/Documento</th>
+                                        <th className="responsive-table-header">Contato</th>
+                                        <th className="responsive-table-header">Endereço</th>
+                                        <th className="responsive-table-header" style={{ textAlign: 'right' }}>Ações</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-
-                        {filteredClients.length === 0 && (
-                            <div style={{ padding: '4rem', textAlign: 'center' }}>
-                                <div style={{ width: '4rem', height: '4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
-                                    <User style={{ color: '#4b5563' }} size={32} />
-                                </div>
-                                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Nenhum cliente encontrado</h3>
-                                <Link href="/dashboard/clients/new">
-                                    <Button style={{ background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}>
-                                        Adicionar Cliente
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
+                                </thead>
+                                <tbody>
+                                    {filteredClients.map((client) => (
+                                        <tr key={client.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', transition: 'background 0.2s' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <td className="responsive-table-cell">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+                                                    <div style={{
+                                                        width: '60px', height: '60px', borderRadius: '50%',
+                                                        background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)', border: '1px solid rgba(255,255,255,0.05)',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
+                                                    }}>
+                                                        <User style={{ color: '#9ca3af' }} size={24} />
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                        <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'white' }}>{client.name}</span>
+                                                        <span style={{ fontSize: '0.85rem', color: '#6b7280' }}>{client.document || "Sem documento"}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="responsive-table-cell">
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                    {client.phone && (
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#d1d5db', fontSize: '0.95rem' }}>
+                                                            <Phone size={16} style={{ color: '#4b5563' }} /> {client.phone}
+                                                        </div>
+                                                    )}
+                                                    {client.email && (
+                                                        <div style={{ fontSize: '0.85rem', color: '#9ca3af' }}>{client.email}</div>
+                                                    )}
+                                                    {!client.phone && !client.email && <span style={{ color: '#6b7280', fontSize: '0.85rem', fontStyle: 'italic' }}>Sem contato</span>}
+                                                </div>
+                                            </td>
+                                            <td className="responsive-table-cell">
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#9ca3af' }}>
+                                                    <MapPin size={16} style={{ color: '#4b5563' }} />
+                                                    <span style={{ fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '250px' }}>{client.address || "-"}</span>
+                                                </div>
+                                            </td>
+                                            <td className="responsive-table-cell" style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                                                    <Button
+                                                        onClick={() => router.push(`/dashboard/clients/${client.id}`)}
+                                                        style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        title="Editar"
+                                                    >
+                                                        <Edit size={18} />
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => handleDelete(client.id)}
+                                                        style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+
+                    {/* Mobile Card View */}
+                    <div className="mobile-only mobile-card-view" style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {filteredClients.map((client) => (
+                                <div key={client.id} className="mobile-card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.25rem' }}>
+                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <div style={{
+                                            width: '50px', height: '50px', borderRadius: '50%',
+                                            background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)', border: '1px solid rgba(255,255,255,0.05)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
+                                        }}>
+                                            <User style={{ color: '#9ca3af' }} size={20} />
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.name}</div>
+                                            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{client.document || "Sem documento"}</div>
+                                        </div>
+                                    </div>
+
+                                    {(client.phone || client.email) && (
+                                        <div className="mobile-card-section" style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem' }}>
+                                            {client.phone && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: client.email ? '0.5rem' : 0 }}>
+                                                    <Phone size={14} style={{ color: '#3b82f6' }} />
+                                                    <span style={{ fontSize: '0.9rem', color: '#d1d5db' }}>{client.phone}</span>
+                                                </div>
+                                            )}
+                                            {client.email && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <User size={14} style={{ color: '#8b5cf6' }} />
+                                                    <span style={{ fontSize: '0.9rem', color: '#d1d5db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.email}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {client.address && (
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem', padding: '0 0.5rem' }}>
+                                            <MapPin size={16} style={{ color: '#6b7280', marginTop: '2px', flexShrink: 0 }} />
+                                            <span style={{ fontSize: '0.9rem', color: '#9ca3af', lineHeight: '1.4' }}>{client.address}</span>
+                                        </div>
+                                    )}
+
+                                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                        <Button
+                                            onClick={() => router.push(`/dashboard/clients/${client.id}`)}
+                                            style={{ flex: 1, height: '40px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                        >
+                                            <Edit size={16} /> Editar
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleDelete(client.id)}
+                                            style={{ flex: 1, height: '40px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                        >
+                                            <Trash2 size={16} /> Excluir
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+
+
+                    {filteredClients.length === 0 && (
+                        <div style={{ padding: '4rem', textAlign: 'center' }}>
+                            <div style={{ width: '4rem', height: '4rem', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                                <User style={{ color: '#4b5563' }} size={32} />
+                            </div>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Nenhum cliente encontrado</h3>
+                            <Link href="/dashboard/clients/new">
+                                <Button style={{ background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary)' }}>
+                                    Adicionar Cliente
+                                </Button>
+                            </Link>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
