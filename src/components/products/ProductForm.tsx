@@ -56,6 +56,26 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
     const [newVariantSize, setNewVariantSize] = useState("");
     const [newVariantStock, setNewVariantStock] = useState(0);
 
+    // Suggestions States
+    const [existingCategories, setExistingCategories] = useState<string[]>([]);
+    const [existingSuppliers, setExistingSuppliers] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            const { data: products } = await supabase
+                .from("products")
+                .select("category, supplier");
+
+            if (products) {
+                const cats = Array.from(new Set(products.map(p => p.category).filter(Boolean))) as string[];
+                const sups = Array.from(new Set(products.map(p => p.supplier).filter(Boolean))) as string[];
+                setExistingCategories(cats.sort());
+                setExistingSuppliers(sups.sort());
+            }
+        };
+        fetchSuggestions();
+    }, [supabase]);
+
     // Se estiver editando, precisaria buscar as variantes. 
     // Como simplificação inicial no frontend, se não houver lógica de fetch variants implemented, 
     // ele começa vazio ou com estoque total no 'Único'. 
@@ -368,9 +388,9 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                                     list="categories"
                                 />
                                 <datalist id="categories">
-                                    <option value="Roupas" />
-                                    <option value="Calçados" />
-                                    <option value="Acessórios" />
+                                    {existingCategories.map(cat => (
+                                        <option key={cat} value={cat} />
+                                    ))}
                                 </datalist>
                             </div>
                             <div>
@@ -382,7 +402,13 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                                         value={formData.supplier}
                                         onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
                                         placeholder="Nome do Fornecedor"
+                                        list="suppliers"
                                     />
+                                    <datalist id="suppliers">
+                                        {existingSuppliers.map(sup => (
+                                            <option key={sup} value={sup} />
+                                        ))}
+                                    </datalist>
                                     <Truck style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'gray' }} size={18} />
                                 </div>
                             </div>
