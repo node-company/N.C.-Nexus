@@ -219,7 +219,12 @@ export default function SalesPDVPage() {
         setLoading(true);
         const { data, error } = await supabase
             .from("sales")
-            .select(`*, clients(name, document), employees(name), sale_items(*, products(name), services(name), product_variants(size))`)
+            .select(`
+                id, created_at, total_amount, status, payment_method, customer_name, customer_phone, discount,
+                clients(name, document), 
+                employees(name), 
+                sale_items(*, products(name), services(name), product_variants(size))
+            `)
             .order("created_at", { ascending: false });
 
         if (error) {
@@ -925,7 +930,11 @@ export default function SalesPDVPage() {
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
                                                     <div style={{ fontWeight: 700 }}>{sale.clients?.name || sale.customer_name || 'Cliente Balcão'}</div>
-                                                    {sale.customer_phone && <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{sale.customer_phone}</div>}
+                                                    {sale.customer_phone ? (
+                                                        <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{sale.customer_phone}</div>
+                                                    ) : (
+                                                        <div style={{ fontSize: '0.7rem', color: '#4b5563', fontStyle: 'italic' }}>Sem telefone</div>
+                                                    )}
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
                                                     {sale.employees?.name || '-'}
