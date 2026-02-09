@@ -86,6 +86,10 @@ export default function SalesPDVPage() {
     const [paymentMethod, setPaymentMethod] = useState<string>("PIX");
     const [filterType, setFilterType] = useState<'ALL' | 'PRODUCT' | 'SERVICE'>('ALL');
 
+    // Client Selection Mode
+    const [isManualClient, setIsManualClient] = useState(false);
+    const [manualClientName, setManualClientName] = useState("");
+
     // Discount State
     const [discountType, setDiscountType] = useState<'FIXED' | 'PERCENTAGE'>('FIXED');
     const [discountValue, setDiscountValue] = useState<number>(0);
@@ -319,13 +323,14 @@ export default function SalesPDVPage() {
                 .from("sales")
                 .insert({
                     user_id: companyOwnerId || user.id,
-                    client_id: selectedClient || null,
+                    client_id: (!isManualClient && selectedClient) ? selectedClient : null,
+                    customer_name: isManualClient ? manualClientName : null,
                     total_amount: finalTotal,
-                    discount: finalDiscount, // Saving the calculated discount
+                    discount: finalDiscount,
                     payment_method: paymentMethod,
                     status: targetStatus,
                     employee_id: selectedSellerId || null,
-                    commission_amount: 0 // Will be updated if calculated
+                    commission_amount: 0
                 })
                 .select()
                 .single();
@@ -736,10 +741,31 @@ export default function SalesPDVPage() {
                             <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {/* Client & Payment */}
                                 <div>
-                                    <select style={{ ...inputStyle, background: 'rgba(255,255,255,0.05)', cursor: 'pointer' }} value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
-                                        <option value="" style={{ background: '#111827' }}>Cliente (Opcional)</option>
-                                        {clients.map(c => <option key={c.id} value={c.id} style={{ background: '#111827' }}>{c.name}</option>)}
-                                    </select>
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                        <button
+                                            onClick={() => setIsManualClient(false)}
+                                            style={{ flex: 1, padding: '8px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: !isManualClient ? 'rgba(16, 185, 129, 0.1)' : 'transparent', color: !isManualClient ? '#34d399' : '#6b7280', fontWeight: 600 }}
+                                        >Cadastrado</button>
+                                        <button
+                                            onClick={() => setIsManualClient(true)}
+                                            style={{ flex: 1, padding: '8px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: isManualClient ? 'rgba(16, 185, 129, 0.1)' : 'transparent', color: isManualClient ? '#34d399' : '#6b7280', fontWeight: 600 }}
+                                        >Manual/Avulso</button>
+                                    </div>
+
+                                    {isManualClient ? (
+                                        <input
+                                            type="text"
+                                            placeholder="Nome do Cliente"
+                                            value={manualClientName}
+                                            onChange={(e) => setManualClientName(e.target.value)}
+                                            style={{ ...inputStyle, background: 'rgba(255,255,255,0.05)' }}
+                                        />
+                                    ) : (
+                                        <select style={{ ...inputStyle, background: 'rgba(255,255,255,0.05)', cursor: 'pointer' }} value={selectedClient} onChange={(e) => setSelectedClient(e.target.value)}>
+                                            <option value="" style={{ background: '#111827' }}>Cliente (Opcional)</option>
+                                            {clients.map(c => <option key={c.id} value={c.id} style={{ background: '#111827' }}>{c.name}</option>)}
+                                        </select>
+                                    )}
                                 </div>
 
                                 {/* Seller Selection */}
