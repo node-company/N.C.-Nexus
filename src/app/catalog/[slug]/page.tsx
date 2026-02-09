@@ -150,6 +150,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                     total_amount: cartTotal,
                     status: 'pending',
                     customer_name: customerName,
+                    customer_phone: customerPhone,
                     payment_method: paymentMethod
                 })
                 .select()

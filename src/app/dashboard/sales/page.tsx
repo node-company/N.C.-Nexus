@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Search, ShoppingCart, Trash2, Plus, Minus, Package, X, Briefcase, Edit, History, Store, FileText, Printer, CheckCircle, Percent } from "lucide-react";
+import { Search, ShoppingCart, Trash2, Plus, Minus, Package, X, Briefcase, Edit, History, Store, FileText, Printer, CheckCircle, Percent, MessageSquare } from "lucide-react";
 import { ReceiptModal } from "@/components/sales/ReceiptModal";
 
 // Types
@@ -924,7 +924,8 @@ export default function SalesPDVPage() {
                                                     <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{new Date(sale.created_at).toLocaleDateString()} {new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
-                                                    {sale.clients?.name || sale.customer_name || 'Cliente Balcão'}
+                                                    <div style={{ fontWeight: 700 }}>{sale.clients?.name || sale.customer_name || 'Cliente Balcão'}</div>
+                                                    {sale.customer_phone && <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{sale.customer_phone}</div>}
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
                                                     {sale.employees?.name || '-'}
@@ -958,6 +959,16 @@ export default function SalesPDVPage() {
                                                         >
                                                             <Printer size={16} />
                                                         </Button>
+
+                                                        {sale.customer_phone && (
+                                                            <Button
+                                                                title="Abrir WhatsApp"
+                                                                onClick={() => window.open(`https://wa.me/${sale.customer_phone.replace(/\D/g, '')}`, '_blank')}
+                                                                style={{ padding: '8px', height: 'auto', background: 'rgba(37, 211, 102, 0.1)', border: 'none', color: '#25D366' }}
+                                                            >
+                                                                <MessageSquare size={16} />
+                                                            </Button>
+                                                        )}
 
                                                         {(historyTab === 'QUOTES' || historyTab === 'PENDING') && (
                                                             <Button
@@ -1022,7 +1033,8 @@ export default function SalesPDVPage() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem' }}>
                                             <div>
                                                 <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700 }}>Cliente</span>
-                                                <div style={{ color: '#d1d5db', fontSize: '0.9rem' }}>{sale.clients?.name || sale.customer_name || 'Cliente Balcão'}</div>
+                                                <div style={{ color: '#d1d5db', fontSize: '0.9rem', fontWeight: 700 }}>{sale.clients?.name || sale.customer_name || 'Cliente Balcão'}</div>
+                                                {sale.customer_phone && <div style={{ color: '#9ca3af', fontSize: '0.8rem' }}>{sale.customer_phone}</div>}
                                             </div>
                                             <div>
                                                 <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700 }}>Vendedor</span>
@@ -1048,6 +1060,15 @@ export default function SalesPDVPage() {
                                             >
                                                 <Printer size={16} />
                                             </Button>
+
+                                            {sale.customer_phone && (
+                                                <Button
+                                                    onClick={() => window.open(`https://wa.me/${sale.customer_phone.replace(/\D/g, '')}`, '_blank')}
+                                                    style={{ flex: 1, height: '36px', background: 'rgba(37, 211, 102, 0.1)', border: '1px solid rgba(37, 211, 102, 0.2)', color: '#25D366', padding: 0 }}
+                                                >
+                                                    <MessageSquare size={16} />
+                                                </Button>
+                                            )}
 
                                             {(historyTab === 'QUOTES' || historyTab === 'PENDING') && (
                                                 <Button
