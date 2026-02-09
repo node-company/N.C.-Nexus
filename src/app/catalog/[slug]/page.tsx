@@ -429,11 +429,11 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                             value={paymentMethod}
                                             onChange={e => setPaymentMethod(e.target.value)}
                                         >
-                                            <option value="A combinar">A combinar / Pagar na Entrega</option>
-                                            <option value="PIX">Pix</option>
-                                            <option value="CREDIT">Cartão de Crédito</option>
-                                            <option value="DEBIT">Cartão de Débito</option>
-                                            <option value="CASH">Dinheiro</option>
+                                            <option value="A combinar" style={{ background: '#121214', color: 'white' }}>A combinar / Pagar na Entrega</option>
+                                            <option value="PIX" style={{ background: '#121214', color: 'white' }}>Pix</option>
+                                            <option value="CREDIT" style={{ background: '#121214', color: 'white' }}>Cartão de Crédito</option>
+                                            <option value="DEBIT" style={{ background: '#121214', color: 'white' }}>Cartão de Débito</option>
+                                            <option value="CASH" style={{ background: '#121214', color: 'white' }}>Dinheiro</option>
                                         </select>
                                     </div>
 
