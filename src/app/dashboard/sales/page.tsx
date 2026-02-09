@@ -60,7 +60,7 @@ export default function SalesPDVPage() {
     // View State
     const [viewMode, setViewMode] = useState<'POS' | 'HISTORY'>('POS');
     const [mobileTab, setMobileTab] = useState<'CATALOG' | 'CART'>('CATALOG');
-    const [historyTab, setHistoryTab] = useState<'SALES' | 'QUOTES'>('SALES');
+    const [historyTab, setHistoryTab] = useState<'SALES' | 'QUOTES' | 'PENDING'>('SALES');
     const [pendingAction, setPendingAction] = useState<{ type: 'EDIT' | 'DELETE' | 'CONVERT', sale: any } | null>(null);
     const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
 
@@ -74,9 +74,12 @@ export default function SalesPDVPage() {
     const [companyOwnerId, setCompanyOwnerId] = useState<string | null>(null);
 
     // Filtered History
-    const filteredHistory = salesHistory.filter(s =>
-        historyTab === 'SALES' ? (s.status === 'completed' || !s.status) : s.status === 'quote'
-    );
+    const filteredHistory = salesHistory.filter(s => {
+        if (historyTab === 'SALES') return s.status === 'completed' || !s.status;
+        if (historyTab === 'QUOTES') return s.status === 'quote';
+        if (historyTab === 'PENDING') return s.status === 'pending';
+        return false;
+    });
 
     // UI States
     const [searchTerm, setSearchTerm] = useState("");
@@ -877,19 +880,24 @@ export default function SalesPDVPage() {
                     // HISTORY MODE
                     <div style={{ flex: 1, ...glassStyle, padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-                        {/* History Tabs */}
-                        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '2rem' }}>
+                        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', gap: '2rem', overflowX: 'auto' }}>
+                            <button
+                                onClick={() => setHistoryTab('PENDING')}
+                                style={{ background: 'transparent', border: 'none', color: historyTab === 'PENDING' ? '#fbbf24' : '#9ca3af', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', paddingBottom: '4px', borderBottom: historyTab === 'PENDING' ? '2px solid #fbbf24' : '2px solid transparent', whiteSpace: 'nowrap' }}
+                            >
+                                Pendentes {salesHistory.filter(s => s.status === 'pending').length > 0 && `(${salesHistory.filter(s => s.status === 'pending').length})`}
+                            </button>
                             <button
                                 onClick={() => setHistoryTab('SALES')}
-                                style={{ background: 'transparent', border: 'none', color: historyTab === 'SALES' ? 'white' : '#9ca3af', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', paddingBottom: '4px', borderBottom: historyTab === 'SALES' ? '2px solid var(--color-primary)' : '2px solid transparent' }}
+                                style={{ background: 'transparent', border: 'none', color: historyTab === 'SALES' ? 'white' : '#9ca3af', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', paddingBottom: '4px', borderBottom: historyTab === 'SALES' ? '2px solid var(--color-primary)' : '2px solid transparent', whiteSpace: 'nowrap' }}
                             >
                                 Vendas Concluídas
                             </button>
                             <button
                                 onClick={() => setHistoryTab('QUOTES')}
-                                style={{ background: 'transparent', border: 'none', color: historyTab === 'QUOTES' ? 'white' : '#9ca3af', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', paddingBottom: '4px', borderBottom: historyTab === 'QUOTES' ? '2px solid var(--color-primary)' : '2px solid transparent' }}
+                                style={{ background: 'transparent', border: 'none', color: historyTab === 'QUOTES' ? 'white' : '#9ca3af', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', paddingBottom: '4px', borderBottom: historyTab === 'QUOTES' ? '2px solid var(--color-primary)' : '2px solid transparent', whiteSpace: 'nowrap' }}
                             >
-                                Orçamentos Salvos
+                                Orçamentos
                             </button>
                         </div>
 
@@ -916,7 +924,7 @@ export default function SalesPDVPage() {
                                                     <div style={{ fontSize: '0.8rem', color: '#9ca3af' }}>{new Date(sale.created_at).toLocaleDateString()} {new Date(sale.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
-                                                    {sale.clients?.name || 'Cliente Balcão'}
+                                                    {sale.clients?.name || sale.customer_name || 'Cliente Balcão'}
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
                                                     {sale.employees?.name || '-'}
@@ -951,11 +959,11 @@ export default function SalesPDVPage() {
                                                             <Printer size={16} />
                                                         </Button>
 
-                                                        {historyTab === 'QUOTES' && (
+                                                        {(historyTab === 'QUOTES' || historyTab === 'PENDING') && (
                                                             <Button
-                                                                title="Converter em Venda"
+                                                                title={historyTab === 'PENDING' ? "Aprovar Pedido" : "Converter em Venda"}
                                                                 onClick={() => setPendingAction({ type: 'CONVERT', sale })}
-                                                                style={{ padding: '8px', height: 'auto', background: 'rgba(16, 185, 129, 0.1)', border: 'none', color: '#10b981' }}
+                                                                style={{ padding: '8px', height: 'auto', background: historyTab === 'PENDING' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', border: 'none', color: historyTab === 'PENDING' ? '#3b82f6' : '#10b981' }}
                                                             >
                                                                 <CheckCircle size={16} />
                                                             </Button>
@@ -1014,7 +1022,7 @@ export default function SalesPDVPage() {
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '0.75rem' }}>
                                             <div>
                                                 <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700 }}>Cliente</span>
-                                                <div style={{ color: '#d1d5db', fontSize: '0.9rem' }}>{sale.clients?.name || 'Cliente Balcão'}</div>
+                                                <div style={{ color: '#d1d5db', fontSize: '0.9rem' }}>{sale.clients?.name || sale.customer_name || 'Cliente Balcão'}</div>
                                             </div>
                                             <div>
                                                 <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700 }}>Vendedor</span>
@@ -1041,10 +1049,11 @@ export default function SalesPDVPage() {
                                                 <Printer size={16} />
                                             </Button>
 
-                                            {historyTab === 'QUOTES' && (
+                                            {(historyTab === 'QUOTES' || historyTab === 'PENDING') && (
                                                 <Button
+                                                    title={historyTab === 'PENDING' ? "Aprovar Pedido" : "Converter em Venda"}
                                                     onClick={() => setPendingAction({ type: 'CONVERT', sale })}
-                                                    style={{ flex: 1, height: '36px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: '#10b981', padding: 0 }}
+                                                    style={{ flex: 1, height: '36px', background: historyTab === 'PENDING' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', color: historyTab === 'PENDING' ? '#3b82f6' : '#10b981', padding: 0 }}
                                                 >
                                                     <CheckCircle size={16} />
                                                 </Button>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Save, Building, Image as ImageIcon, MapPin, Mail, Phone, FileText } from "lucide-react";
+import { Save, Building, Image as ImageIcon, MapPin, Mail, Phone, FileText, Globe, Link2, Check, Copy } from "lucide-react";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -18,6 +18,9 @@ interface CompanySettings {
     footer_text: string;
     subscription_status?: string;
     subscription_plan?: string;
+    catalog_slug?: string;
+    catalog_active?: boolean;
+    whatsapp_number?: string;
 }
 
 export default function SettingsPage() {
@@ -43,7 +46,10 @@ export default function SettingsPage() {
         phone: "",
         address: "",
         logo_url: "",
-        footer_text: "Obrigado pela preferência!"
+        footer_text: "Obrigado pela preferência!",
+        catalog_active: false,
+        catalog_slug: "",
+        whatsapp_number: ""
     });
 
     // Styles
@@ -343,6 +349,87 @@ export default function SettingsPage() {
                                 </div>
                             )}
                         </div>
+                    </div>
+
+                    {/* Public Catalog */}
+                    <div style={{ paddingBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Globe size={20} color="#a78bfa" /> Catálogo Digital Público
+                            </h3>
+                            <button
+                                onClick={() => setSettings(prev => ({ ...prev, catalog_active: !prev.catalog_active }))}
+                                style={{
+                                    background: settings.catalog_active ? '#34d399' : 'rgba(255,255,255,0.1)',
+                                    border: 'none',
+                                    padding: '6px 16px',
+                                    borderRadius: '99px',
+                                    color: settings.catalog_active ? 'black' : 'white',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s'
+                                }}
+                            >
+                                {settings.catalog_active ? 'ATIVADO' : 'DESATIVADO'}
+                            </button>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div>
+                                <label style={labelStyle}>Link do seu Catálogo (Slug)</label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '14px', color: '#6b7280', fontSize: '0.9rem' }}>/catalog/</span>
+                                    <input
+                                        type="text"
+                                        placeholder="nome-da-loja"
+                                        style={{ ...inputStyle, paddingLeft: '80px' }}
+                                        value={settings.catalog_slug || ""}
+                                        onChange={e => setSettings({ ...settings, catalog_slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') })}
+                                    />
+                                </div>
+                                <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>Use apenas letras, números e hífens.</p>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>WhatsApp Consultas</label>
+                                <input
+                                    type="text"
+                                    placeholder="5511999999999"
+                                    style={inputStyle}
+                                    value={settings.whatsapp_number || ""}
+                                    onChange={e => setSettings({ ...settings, whatsapp_number: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        {settings.catalog_active && settings.catalog_slug && (
+                            <div style={{
+                                background: 'rgba(167, 139, 250, 0.1)',
+                                border: '1px dashed rgba(167, 139, 250, 0.3)',
+                                borderRadius: '12px',
+                                padding: '1rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <Link2 size={18} color="#a78bfa" />
+                                    <span style={{ color: '#a78bfa', fontSize: '0.9rem', fontWeight: 600 }}>
+                                        {window.location.protocol}//{window.location.host}/catalog/{settings.catalog_slug}
+                                    </span>
+                                </div>
+                                <Button
+                                    onClick={() => {
+                                        const url = `${window.location.protocol}//${window.location.host}/catalog/${settings.catalog_slug}`;
+                                        navigator.clipboard.writeText(url);
+                                        alert("Link copiado!");
+                                    }}
+                                    style={{ background: 'rgba(167, 139, 250, 0.2)', color: '#a78bfa', border: 'none', padding: '6px 12px', fontSize: '0.8rem' }}
+                                >
+                                    <Copy size={14} style={{ marginRight: '4px' }} /> Copiar
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Documents */}
