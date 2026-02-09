@@ -16,6 +16,12 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 
+interface ProductVariant {
+    id: string;
+    size: string;
+    stock_quantity: number;
+}
+
 interface Product {
     id: string;
     name: string;
@@ -23,6 +29,8 @@ interface Product {
     price: number;
     image_url?: string;
     category?: string;
+    stock_quantity?: number;
+    product_variants: ProductVariant[];
     type: 'PRODUCT';
 }
 
@@ -52,7 +60,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
     const [loading, setLoading] = useState(true);
     const [company, setCompany] = useState<Company | null>(null);
     const [items, setItems] = useState<CatalogItem[]>([]);
-    const [cart, setCart] = useState<{ item: CatalogItem, quantity: number }[]>([]);
+    const [cart, setCart] = useState<{ item: CatalogItem, quantity: number, variant_id?: string, variant_name?: string }[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("Tudo");
 
@@ -60,6 +68,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
     const [showCart, setShowCart] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [selectedProductForVariant, setSelectedProductForVariant] = useState<Product | null>(null);
 
     // Order Form
     const [customerName, setCustomerName] = useState("");
@@ -91,7 +100,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
             // 2. Fetch Products
             const { data: products } = await supabase
                 .from('products')
-                .select('id, name, description, price, image_url, category')
+                .select('id, name, description, price, image_url, category, stock_quantity, product_variants(id, size, stock_quantity)')
                 .eq('user_id', companyData.user_id)
                 .eq('active', true);
 
@@ -124,14 +133,28 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
         return matchesSearch && matchesCategory;
     });
 
-    const addToCart = (item: CatalogItem) => {
-        setCart(prev => {
-            const existing = prev.find(i => i.item.id === item.id);
-            if (existing) {
-                return prev.map(i => i.item.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+    const addToCart = (item: CatalogItem, variantId?: string, variantName?: string) => {
+        if (item.type === 'PRODUCT') {
+            const product = item as Product;
+            if (!variantId && product.product_variants && product.product_variants.length > 0) {
+                setSelectedProductForVariant(product);
+                return;
             }
-            return [...prev, { item, quantity: 1 }];
+        }
+
+        setCart(prev => {
+            const existing = prev.find(i =>
+                i.item.id === item.id && i.variant_id === variantId
+            );
+            if (existing) {
+                return prev.map(i => (i.item.id === item.id && i.variant_id === variantId) ? { ...i, quantity: i.quantity + 1 } : i);
+            }
+            return [...prev, { item, quantity: 1, variant_id: variantId, variant_name: variantName }];
         });
+
+        if (variantId) {
+            setSelectedProductForVariant(null);
+        }
     };
 
     const cartTotal = cart.reduce((acc, i) => acc + (i.item.price * i.quantity), 0);
@@ -164,6 +187,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                 user_id: company.user_id,
                 product_id: c.item.type === 'PRODUCT' ? c.item.id : null,
                 service_id: c.item.type === 'SERVICE' ? c.item.id : null,
+                variant_id: c.variant_id || null,
                 quantity: c.quantity,
                 unit_price: c.item.price,
                 subtotal: c.item.price * c.quantity
@@ -323,23 +347,52 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                     <h4 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 4px 0' }}>{item.name}</h4>
                                     <p style={{ fontSize: '0.8rem', color: '#6b7280', margin: '0 0 8px 0', lineClamp: 2, display: '-webkit-box', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{item.description}</p>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#10b981' }}>R$ {item.price.toFixed(2)}</span>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#10b981' }}>R$ {item.price.toFixed(2)}</span>
+                                            {item.type === 'PRODUCT' && (
+                                                <div style={{ fontSize: '0.7rem', fontWeight: 600 }}>
+                                                    {(() => {
+                                                        const product = item as Product;
+                                                        const stock = product.product_variants && product.product_variants.length > 0
+                                                            ? product.product_variants.reduce((acc, v) => acc + v.stock_quantity, 0)
+                                                            : (product.stock_quantity || 0);
+
+                                                        if (stock === 0) return <span style={{ color: '#ef4444' }}>Esgotado</span>;
+                                                        if (stock === 1) return <span style={{ color: '#fbbf24' }}>Última unidade!</span>;
+                                                        if (stock <= 3) return <span style={{ color: '#fbbf24' }}>Últimas {stock} unidades</span>;
+                                                        return <span style={{ color: '#6b7280' }}>{stock} em estoque</span>;
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
                                         <button
+                                            disabled={item.type === 'PRODUCT' && (
+                                                (item as Product).product_variants && (item as Product).product_variants.length > 0
+                                                    ? (item as Product).product_variants.reduce((acc, v) => acc + v.stock_quantity, 0) === 0
+                                                    : ((item as Product).stock_quantity || 0) === 0
+                                            )}
                                             onClick={() => addToCart(item)}
                                             style={{
                                                 background: 'rgba(16, 185, 129, 0.1)',
                                                 color: '#10b981',
                                                 border: 'none',
-                                                width: '32px',
-                                                height: '32px',
-                                                borderRadius: '50%',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                cursor: 'pointer'
+                                                padding: '8px 16px',
+                                                borderRadius: '12px',
+                                                fontWeight: 800,
+                                                fontSize: '0.8rem',
+                                                cursor: 'pointer',
+                                                opacity: (item.type === 'PRODUCT' && (
+                                                    (item as Product).product_variants && (item as Product).product_variants.length > 0
+                                                        ? (item as Product).product_variants.reduce((acc, v) => acc + v.stock_quantity, 0) === 0
+                                                        : ((item as Product).stock_quantity || 0) === 0
+                                                )) ? 0.5 : 1
                                             }}
                                         >
-                                            <ShoppingCart size={16} />
+                                            {(item.type === 'PRODUCT' && (
+                                                (item as Product).product_variants && (item as Product).product_variants.length > 0
+                                                    ? (item as Product).product_variants.reduce((acc, v) => acc + v.stock_quantity, 0) === 0
+                                                    : ((item as Product).stock_quantity || 0) === 0
+                                            )) ? 'Esgotado' : 'Adicionar'}
                                         </button>
                                     </div>
                                 </div>
@@ -392,20 +445,21 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
 
                         <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-                                {cart.map(i => (
-                                    <div key={i.item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div>
+                                {cart.map((i, idx) => (
+                                    <div key={`${i.item.id}-${i.variant_id}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ flex: 1 }}>
                                             <p style={{ margin: 0, fontWeight: 700 }}>{i.item.name}</p>
+                                            {i.variant_name && <p style={{ margin: 0, fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>Tamanho: {i.variant_name}</p>}
                                             <p style={{ margin: 0, fontSize: '0.8rem', color: '#6b7280' }}>R$ {i.item.price.toFixed(2)} un. x {i.quantity}</p>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                             <button
-                                                onClick={() => setCart(prev => prev.map(item => item.item.id === i.item.id ? { ...item, quantity: Math.max(0, item.quantity - 1) } : item).filter(item => item.quantity > 0))}
+                                                onClick={() => setCart(prev => prev.map((item, index) => (item.item.id === i.item.id && item.variant_id === i.variant_id && index === idx) ? { ...item, quantity: Math.max(0, item.quantity - 1) } : item).filter(item => item.quantity > 0))}
                                                 style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white' }}
                                             >-</button>
                                             <span style={{ fontWeight: 700 }}>{i.quantity}</span>
                                             <button
-                                                onClick={() => setCart(prev => prev.map(item => item.item.id === i.item.id ? { ...item, quantity: item.quantity + 1 } : item))}
+                                                onClick={() => setCart(prev => prev.map((item, index) => (item.item.id === i.item.id && item.variant_id === i.variant_id && index === idx) ? { ...item, quantity: item.quantity + 1 } : item))}
                                                 style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white' }}
                                             >+</button>
                                         </div>
@@ -452,6 +506,73 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                     </Button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Order Success Modal */}
+            {orderSuccess && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div style={{ background: '#121214', borderRadius: '32px', padding: '3rem 2rem', width: '100%', maxWidth: '400px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
+                            <CheckCircle2 size={48} color="#10b981" />
+                        </div>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1rem' }}>Pedido Enviado!</h3>
+                        <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>Obrigado {customerName}! Recebemos seu pedido e entraremos em contato em breve para confirmar os detalhes.</p>
+                        <Button
+                            onClick={() => setOrderSuccess(false)}
+                            style={{ width: '100%', height: '56px', borderRadius: '16px', background: '#10b981', color: 'black', fontWeight: 800 }}
+                        >
+                            FECHAR
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Variant Selection Modal */}
+            {selectedProductForVariant && (
+                <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div style={{ background: '#121214', borderRadius: '24px', width: '100%', maxWidth: '400px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Escolha o Tamanho</h3>
+                            <button onClick={() => setSelectedProductForVariant(null)} style={{ background: 'transparent', border: 'none', color: '#6b7280' }}><X size={24} /></button>
+                        </div>
+                        <div style={{ padding: '1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
+                                    {selectedProductForVariant.image_url ? <img src={selectedProductForVariant.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Package size={24} opacity={0.2} style={{ margin: '12px' }} />}
+                                </div>
+                                <div>
+                                    <h4 style={{ margin: 0, fontWeight: 700 }}>{selectedProductForVariant.name}</h4>
+                                    <p style={{ margin: 0, color: '#10b981', fontWeight: 800 }}>R$ {selectedProductForVariant.price.toFixed(2)}</p>
+                                </div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+                                {selectedProductForVariant.product_variants.map(variant => (
+                                    <button
+                                        key={variant.id}
+                                        disabled={variant.stock_quantity === 0}
+                                        onClick={() => addToCart(selectedProductForVariant, variant.id, variant.size)}
+                                        style={{
+                                            padding: '12px',
+                                            borderRadius: '12px',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            color: 'white',
+                                            textAlign: 'left',
+                                            cursor: variant.stock_quantity > 0 ? 'pointer' : 'not-allowed',
+                                            opacity: variant.stock_quantity === 0 ? 0.3 : 1,
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{variant.size}</div>
+                                        <div style={{ fontSize: '0.7rem', color: variant.stock_quantity > 0 ? '#6b7280' : '#ef4444' }}>
+                                            {variant.stock_quantity > 0 ? `${variant.stock_quantity} un.` : 'Esgotado'}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
