@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import React, { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
     ShoppingCart,
@@ -45,8 +45,8 @@ interface Company {
     whatsapp_number?: string;
 }
 
-export default function CatalogPage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = use(params);
+export default function CatalogPage({ params }: { params: { slug: string } }) {
+    const { slug } = params;
     const supabase = createClient();
 
     const [loading, setLoading] = useState(true);
@@ -114,7 +114,7 @@ export default function CatalogPage({ params }: { params: Promise<{ slug: string
         }
     }
 
-    const categories = ["Tudo", ...new Set(items.map(i => (i as any).category || (i.type === 'SERVICE' ? 'Serviços' : 'Outros')))];
+    const categories = ["Tudo", ...Array.from(new Set(items.map(i => (i as any).category || (i.type === 'SERVICE' ? 'Serviços' : 'Outros'))))];
 
     const filteredItems = items.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());

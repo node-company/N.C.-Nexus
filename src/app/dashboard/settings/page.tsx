@@ -26,6 +26,7 @@ interface CompanySettings {
 export default function SettingsPage() {
     const supabase = createClient();
     const { can_manage_settings, loading: permissionsLoading } = usePermissions();
+    const [isMounted, setIsMounted] = useState(false);
 
     if (!permissionsLoading && !can_manage_settings) {
         return (
@@ -82,6 +83,7 @@ export default function SettingsPage() {
     };
 
     useEffect(() => {
+        setIsMounted(true);
         fetchSettings();
     }, []);
 
@@ -415,11 +417,12 @@ export default function SettingsPage() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <Link2 size={18} color="#a78bfa" />
                                     <span style={{ color: '#a78bfa', fontSize: '0.9rem', fontWeight: 600 }}>
-                                        {window.location.protocol}//{window.location.host}/catalog/{settings.catalog_slug}
+                                        {isMounted ? `${window.location.protocol}//${window.location.host}/catalog/${settings.catalog_slug}` : 'Carregando link...'}
                                     </span>
                                 </div>
                                 <Button
                                     onClick={() => {
+                                        if (typeof window === 'undefined') return;
                                         const url = `${window.location.protocol}//${window.location.host}/catalog/${settings.catalog_slug}`;
                                         navigator.clipboard.writeText(url);
                                         alert("Link copiado!");
