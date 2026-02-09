@@ -64,6 +64,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
     // Order Form
     const [customerName, setCustomerName] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("A combinar");
 
     useEffect(() => {
         fetchCatalog();
@@ -149,7 +150,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                     total_amount: cartTotal,
                     status: 'pending',
                     customer_name: customerName,
-                    payment_method: 'A definir'
+                    payment_method: paymentMethod
                 })
                 .select()
                 .single();
@@ -420,6 +421,20 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                     <div>
                                         <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>WhatsApp</label>
                                         <input required type="text" placeholder="(99) 99999-9999" style={inputStyle} value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Forma de Pagamento</label>
+                                        <select
+                                            style={{ ...inputStyle, cursor: 'pointer', appearance: 'none' }}
+                                            value={paymentMethod}
+                                            onChange={e => setPaymentMethod(e.target.value)}
+                                        >
+                                            <option value="A combinar">A combinar / Pagar na Entrega</option>
+                                            <option value="PIX">Pix</option>
+                                            <option value="CREDIT">Cartão de Crédito</option>
+                                            <option value="DEBIT">Cartão de Débito</option>
+                                            <option value="CASH">Dinheiro</option>
+                                        </select>
                                     </div>
 
                                     <div style={{ margin: '1rem 0', padding: '1.5rem', borderRadius: '16px', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
