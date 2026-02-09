@@ -253,7 +253,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
             <header style={{ padding: '2rem 1rem', position: 'sticky', top: 0, zIndex: 10, background: 'rgba(9, 9, 11, 0.8)', backdropFilter: 'blur(10px)' }}>
                 <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        {company.logo_url && <img src={company.logo_url} alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover' }} />}
+                        {company.logo_url && <img src={company.logo_url} alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'contain', background: 'rgba(255,255,255,0.05)' }} />}
                         <div>
                             <h1 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0 }}>{company.name}</h1>
                             <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, margin: 0 }}>● Aberto para Pedidos</p>
