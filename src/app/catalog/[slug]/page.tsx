@@ -360,7 +360,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                                         if (stock === 0) return <span style={{ color: '#ef4444' }}>Esgotado</span>;
                                                         if (stock === 1) return <span style={{ color: '#fbbf24' }}>Última unidade!</span>;
                                                         if (stock <= 3) return <span style={{ color: '#fbbf24' }}>Últimas {stock} unidades</span>;
-                                                        return <span style={{ color: '#6b7280' }}>{stock} em estoque</span>;
+                                                        return null;
                                                     })()}
                                                 </div>
                                             )}
@@ -567,8 +567,10 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                         }}
                                     >
                                         <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{variant.size}</div>
-                                        <div style={{ fontSize: '0.7rem', color: variant.stock_quantity > 0 ? '#6b7280' : '#ef4444' }}>
-                                            {variant.stock_quantity > 0 ? `${variant.stock_quantity} un.` : 'Esgotado'}
+                                        <div style={{ fontSize: '0.7rem', color: variant.stock_quantity === 0 ? '#ef4444' : '#fbbf24' }}>
+                                            {variant.stock_quantity === 0 ? 'Esgotado' :
+                                                variant.stock_quantity === 1 ? 'Última unidade!' :
+                                                    variant.stock_quantity <= 3 ? `Últimas ${variant.stock_quantity} un.` : ''}
                                         </div>
                                     </button>
                                 ))}
