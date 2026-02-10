@@ -17,7 +17,18 @@ import {
     Edit,
     Trash2
 } from "lucide-react";
-import { format } from "date-fns";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    Cell
+} from "recharts";
+import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 // Types
@@ -37,11 +48,22 @@ interface Summary {
     balance: number;
 }
 
+interface ChartDataPoint {
+    name: string;
+    income: number;
+    expense: number;
+}
+
 export default function FinancialPage() {
     const supabase = createClient();
     const [loading, setLoading] = useState(true);
     const [records, setRecords] = useState<FinancialRecord[]>([]);
     const [summary, setSummary] = useState<Summary>({ revenue: 0, expenses: 0, balance: 0 });
+    const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+
+    // Filter State
+    const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+    const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
@@ -87,24 +109,36 @@ export default function FinancialPage() {
 
     useEffect(() => {
         fetchFinancials();
-    }, []);
+    }, [startDate, endDate]);
 
     const fetchFinancials = async () => {
         setLoading(true);
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // 1. Fetch Sales within Range
             const { data: sales, error: salesError } = await supabase
                 .from("sales")
                 .select("id, total_amount, created_at, status")
-                .eq("status", "completed");
+                .eq("user_id", user.id)
+                .eq("status", "completed")
+                .gte("created_at", `${startDate}T00:00:00`)
+                .lte("created_at", `${endDate}T23:59:59`);
 
             if (salesError) throw salesError;
 
+            // 2. Fetch Transactions within Range
             const { data: transactions, error: transError } = await supabase
                 .from("transactions")
-                .select("*");
+                .select("*")
+                .eq("user_id", user.id)
+                .gte("date", startDate)
+                .lte("date", endDate);
 
             if (transError) throw transError;
 
+            // Normalize Data
             const normalizedSales: FinancialRecord[] = (sales || []).map(s => ({
                 id: s.id,
                 description: `Venda #${s.id.slice(0, 8)}`,
@@ -115,7 +149,7 @@ export default function FinancialPage() {
                 category: 'Vendas'
             }));
 
-            const normalizedtransactions: FinancialRecord[] = (transactions || []).map(t => ({
+            const normalizedTransactions: FinancialRecord[] = (transactions || []).map(t => ({
                 id: t.id,
                 description: t.description,
                 amount: t.amount,
@@ -125,12 +159,13 @@ export default function FinancialPage() {
                 category: t.category
             }));
 
-            const allRecords = [...normalizedSales, ...normalizedtransactions].sort((a, b) =>
+            const allRecords = [...normalizedSales, ...normalizedTransactions].sort((a, b) =>
                 new Date(b.date).getTime() - new Date(a.date).getTime()
             );
 
             setRecords(allRecords);
 
+            // Calculate Summary
             const revenue = allRecords
                 .filter(r => r.type === 'INCOME')
                 .reduce((acc, curr) => acc + curr.amount, 0);
@@ -144,6 +179,30 @@ export default function FinancialPage() {
                 expenses,
                 balance: revenue - expenses
             });
+
+            // Generate Chart Data
+            const days = eachDayOfInterval({
+                start: parseISO(startDate),
+                end: parseISO(endDate)
+            });
+
+            const dailyData: ChartDataPoint[] = days.map(day => {
+                const dayStr = format(day, "yyyy-MM-dd");
+                const dayIncome = allRecords
+                    .filter(r => r.type === 'INCOME' && r.date.startsWith(dayStr))
+                    .reduce((acc, curr) => acc + curr.amount, 0);
+                const dayExpense = allRecords
+                    .filter(r => r.type === 'EXPENSE' && r.date.startsWith(dayStr))
+                    .reduce((acc, curr) => acc + curr.amount, 0);
+
+                return {
+                    name: format(day, "dd/MM"),
+                    income: dayIncome,
+                    expense: dayExpense
+                };
+            });
+
+            setChartData(dailyData);
 
         } catch (error) {
             console.error("Error fetching financials:", error);
@@ -275,6 +334,80 @@ export default function FinancialPage() {
                 </Button>
             </div>
 
+            {/* Filters and Search Area */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1.5rem',
+                marginBottom: '2rem',
+                flexWrap: 'wrap'
+            }}>
+                <div style={{
+                    ...glassStyle,
+                    padding: '0.75rem 1.5rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem',
+                    flex: 1,
+                    minWidth: '300px'
+                }}>
+                    <Calendar size={18} style={{ color: '#9ca3af' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'white',
+                                outline: 'none',
+                                fontSize: '0.875rem',
+                                cursor: 'pointer'
+                            }}
+                        />
+                        <span style={{ color: '#4b5563' }}>até</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'white',
+                                outline: 'none',
+                                fontSize: '0.875rem',
+                                cursor: 'pointer'
+                            }}
+                        />
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <Button
+                        onClick={() => {
+                            setStartDate(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+                            setEndDate(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+                        }}
+                        variant="ghost"
+                        style={{ fontSize: '0.875rem' }}
+                    >
+                        Este Mês
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setStartDate(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+                            setEndDate(format(new Date(), "yyyy-MM-dd"));
+                        }}
+                        variant="ghost"
+                        style={{ fontSize: '0.875rem' }}
+                    >
+                        Últimos 30 dias
+                    </Button>
+                </div>
+            </div>
+
             {/* KPI Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100%, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
                 {/* Revenue */}
@@ -311,6 +444,71 @@ export default function FinancialPage() {
                         <span>R$</span>
                         {summary.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </h2>
+                </div>
+            </div>
+
+            {/* Financial Charts */}
+            <div style={{ ...glassStyle, padding: '2rem', marginBottom: '2rem', minHeight: '400px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', margin: 0 }}>Fluxo de Caixa</h3>
+                        <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.25rem' }}>Comparativo diário de Entradas e Saídas</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#34d399' }}></div>
+                            <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 600 }}>ENTRADAS</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f87171' }}></div>
+                            <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 600 }}>SAÍDAS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ width: '100%', height: 300 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                            <XAxis
+                                dataKey="name"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                                dy={10}
+                            />
+                            <YAxis
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                                tickFormatter={(value) => `R$ ${value}`}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    background: 'rgba(15, 23, 42, 0.9)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px',
+                                    backdropFilter: 'blur(8px)'
+                                }}
+                                itemStyle={{ fontSize: '0.875rem' }}
+                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                            />
+                            <Bar
+                                dataKey="income"
+                                name="Entradas"
+                                fill="#34d399"
+                                radius={[4, 4, 0, 0]}
+                                barSize={20}
+                            />
+                            <Bar
+                                dataKey="expense"
+                                name="Saídas"
+                                fill="#f87171"
+                                radius={[4, 4, 0, 0]}
+                                barSize={20}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
