@@ -311,73 +311,73 @@ export default function DashboardPage() {
             </div>
 
             {/* KPI Cards Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', marginBottom: '2.5rem' }}>
                 {/* Sales Today */}
-                <div style={{ ...cardStyle, padding: '1.25rem' }}>
+                <div style={{ ...cardStyle, padding: '0.875rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div style={{ minWidth: 0 }}>
-                            <p style={{ color: '#9ca3af', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Vendas Hoje</p>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginTop: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                R$ {stats.salesToday.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <p style={{ color: '#9ca3af', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Vendas Hoje</p>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
+                                R${stats.salesToday.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </h3>
                         </div>
-                        <div style={{ padding: '8px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '10px', color: '#10b981', flexShrink: 0 }}>
-                            <TrendingUp size={20} />
+                        <div style={{ padding: '5px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '6px', color: '#10b981', flexShrink: 0 }}>
+                            <TrendingUp size={14} />
                         </div>
                     </div>
-                    <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                        <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}>
+                    <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '1px 4px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: 700 }}>
                             {stats.salesToday.count} vendas
                         </span>
                     </div>
                 </div>
 
                 {/* New Clients */}
-                <div style={{ ...cardStyle, padding: '1.25rem' }}>
+                <div style={{ ...cardStyle, padding: '0.875rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                            <p style={{ color: '#9ca3af', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Novos Clientes</p>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginTop: '0.25rem' }}>
+                            <p style={{ color: '#9ca3af', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Novos Clientes</p>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
                                 {stats.newClientsMonth}
                             </h3>
                         </div>
-                        <div style={{ padding: '8px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '10px', color: '#3b82f6', flexShrink: 0 }}>
-                            <Users size={20} />
+                        <div style={{ padding: '5px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '6px', color: '#3b82f6', flexShrink: 0 }}>
+                            <Users size={14} />
                         </div>
                     </div>
-                    <span style={{ marginTop: '0.75rem', color: '#6b7280', fontSize: '0.7rem' }}>Neste mês</span>
+                    <span style={{ marginTop: '0.4rem', color: '#6b7280', fontSize: '0.6rem' }}>Neste mês</span>
                 </div>
 
                 {/* Stock Items */}
-                <div style={{ ...cardStyle, padding: '1.25rem' }}>
+                <div style={{ ...cardStyle, padding: '0.875rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div>
-                            <p style={{ color: '#9ca3af', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Estoque</p>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginTop: '0.25rem' }}>
+                            <p style={{ color: '#9ca3af', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Estoque</p>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
                                 {stats.totalStockItems}
                             </h3>
                         </div>
-                        <div style={{ padding: '8px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '10px', color: '#f59e0b', flexShrink: 0 }}>
-                            <Package size={20} />
+                        <div style={{ padding: '5px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '6px', color: '#f59e0b', flexShrink: 0 }}>
+                            <Package size={14} />
                         </div>
                     </div>
-                    <span style={{ marginTop: '0.75rem', color: '#6b7280', fontSize: '0.7rem' }}>Itens totais</span>
+                    <span style={{ marginTop: '0.4rem', color: '#6b7280', fontSize: '0.6rem' }}>Itens totais</span>
                 </div>
 
                 {/* Financial Balance */}
-                <div style={{ ...cardStyle, padding: '1.25rem' }}>
+                <div style={{ ...cardStyle, padding: '0.875rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                         <div style={{ minWidth: 0 }}>
-                            <p style={{ color: '#9ca3af', fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Saldo Atual</p>
-                            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, color: stats.financialBalance >= 0 ? '#34d399' : '#ef4444', marginTop: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                R$ {stats.financialBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            <p style={{ color: '#9ca3af', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Saldo Atual</p>
+                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: stats.financialBalance >= 0 ? '#34d399' : '#ef4444', marginTop: '0.2rem' }}>
+                                R${stats.financialBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </h3>
                         </div>
-                        <div style={{ padding: '8px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '10px', color: '#8b5cf6', flexShrink: 0 }}>
-                            <Wallet size={20} />
+                        <div style={{ padding: '5px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '6px', color: '#8b5cf6', flexShrink: 0 }}>
+                            <Wallet size={14} />
                         </div>
                     </div>
-                    <span style={{ marginTop: '0.75rem', color: '#6b7280', fontSize: '0.7rem' }}>Caixa acumulado</span>
+                    <span style={{ marginTop: '0.4rem', color: '#6b7280', fontSize: '0.6rem' }}>Caixa acumulado</span>
                 </div>
             </div>
 
