@@ -141,7 +141,8 @@ export default function DashboardPage() {
                 // 3. Stock Items
                 const { data: products } = await supabase
                     .from('products')
-                    .select('id, name, stock_quantity, image_url, product_variants(stock_quantity)');
+                    .select('id, name, stock_quantity, image_url, product_variants(stock_quantity)')
+                    .eq('active', true);
 
                 let totalStock = 0;
                 const lowStockList: LowStockProduct[] = [];
