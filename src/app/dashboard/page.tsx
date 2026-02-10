@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
     TrendingUp,
     Users,
@@ -84,6 +85,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function DashboardPage() {
     const supabase = createClient();
     const router = useRouter();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<DashboardStats>({
         salesToday: { count: 0, value: 0 },
@@ -114,6 +116,8 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
+        if (!user) return;
+
         const fetchDashboardData = async () => {
             try {
                 const today = new Date();
@@ -125,6 +129,7 @@ export default function DashboardPage() {
                 const { data: salesTodayData } = await supabase
                     .from('sales')
                     .select('total_amount')
+                    .eq('user_id', user.id)
                     .gte('created_at', `${todayStr}T00:00:00`)
                     .lte('created_at', `${todayStr}T23:59:59`)
                     .eq('status', 'completed');
@@ -136,12 +141,14 @@ export default function DashboardPage() {
                 const { count: newClientsCount } = await supabase
                     .from('clients')
                     .select('*', { count: 'exact', head: true })
+                    .eq('user_id', user.id)
                     .gte('created_at', firstDayOfMonth);
 
                 // 3. Stock Items
                 const { data: products } = await supabase
                     .from('products')
                     .select('id, name, stock_quantity, image_url, product_variants(stock_quantity)')
+                    .eq('user_id', user.id)
                     .eq('active', true);
 
                 let totalStock = 0;
@@ -162,10 +169,10 @@ export default function DashboardPage() {
                 });
 
                 // 4. Financial Balance (Total)
-                const { data: allSales } = await supabase.from('sales').select('total_amount').eq('status', 'completed');
+                const { data: allSales } = await supabase.from('sales').select('total_amount').eq('user_id', user.id).eq('status', 'completed');
                 const totalSalesRevenue = allSales?.reduce((acc, curr) => acc + curr.total_amount, 0) || 0;
 
-                const { data: allTransactions } = await supabase.from('transactions').select('amount, type');
+                const { data: allTransactions } = await supabase.from('transactions').select('amount, type').eq('user_id', user.id);
                 const totalExpenses = allTransactions?.filter(t => t.type === 'EXPENSE').reduce((acc, curr) => acc + curr.amount, 0) || 0;
                 const totalManualIncome = allTransactions?.filter(t => t.type === 'INCOME').reduce((acc, curr) => acc + curr.amount, 0) || 0;
                 const balance = (totalSalesRevenue + totalManualIncome) - totalExpenses;
@@ -174,12 +181,14 @@ export default function DashboardPage() {
                 const { data: periodSales } = await supabase
                     .from('sales')
                     .select('total_amount, created_at')
+                    .eq('user_id', user.id)
                     .eq('status', 'completed')
                     .gte('created_at', thirtyDaysAgo.toISOString());
 
                 const { data: periodTransactions } = await supabase
                     .from('transactions')
                     .select('amount, type, date') // transactions usam 'date' (YYYY-MM-DD) ou 'created_at' se date for null? Schema diz date default CURRENT_DATE
+                    .eq('user_id', user.id)
                     .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
 
                 // Generate map of dates
@@ -234,6 +243,7 @@ export default function DashboardPage() {
                 const { data: recentSalesData } = await supabase
                     .from('sales')
                     .select('id, total_amount, created_at, status')
+                    .eq('user_id', user.id)
                     .order('created_at', { ascending: false })
                     .limit(5);
 
@@ -249,7 +259,7 @@ export default function DashboardPage() {
         };
 
         fetchDashboardData();
-    }, []);
+    }, [user]);
 
     if (loading) {
         return <div style={{ padding: '2rem', color: '#9ca3af', textAlign: 'center' }}>Carregando visão geral...</div>;

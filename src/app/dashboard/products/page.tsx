@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Plus, Edit, Trash2, Search, Package } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
 
 interface Product {
     id: string;
@@ -23,6 +24,7 @@ export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const { user } = useAuth();
     const supabase = createClient();
     const router = useRouter();
 
@@ -30,14 +32,18 @@ export default function ProductsPage() {
     const { can_manage_products, loading: permissionsLoading } = usePermissions();
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        if (user) {
+            fetchProducts();
+        }
+    }, [user]);
 
     async function fetchProducts() {
         try {
+            if (!user) return;
             const { data, error } = await supabase
                 .from("products")
                 .select("*, product_variants(id, stock_quantity)")
+                .eq('user_id', user.id)
                 .eq('active', true) // Filter active products
                 .order("created_at", { ascending: false });
 
