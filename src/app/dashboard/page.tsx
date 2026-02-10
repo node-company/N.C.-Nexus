@@ -277,6 +277,39 @@ export default function DashboardPage() {
                 </p>
             </div>
 
+            {/* QUICK ACCESS (Moved to top) */}
+            <div style={{ marginBottom: "2.5rem" }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+                    <button onClick={() => router.push('/dashboard/sales')} style={{ ...glassStyle, padding: '1.5rem', border: '1px solid rgba(52, 211, 153, 0.2)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(52, 211, 153, 0.5)'; e.currentTarget.style.background = 'rgba(52, 211, 153, 0.05)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; }}>
+                        <div style={{ padding: '12px', background: 'rgba(52, 211, 153, 0.15)', borderRadius: '14px', color: '#34d399', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)' }}>
+                            <ShoppingCart size={26} />
+                        </div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '0.95rem' }}>Nova Venda</span>
+                    </button>
+
+                    <button onClick={() => router.push('/dashboard/products/new')} style={{ ...glassStyle, padding: '1.5rem', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)'; e.currentTarget.style.background = 'rgba(59, 130, 246, 0.05)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; }}>
+                        <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '14px', color: '#3b82f6', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.1)' }}>
+                            <Package size={26} />
+                        </div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '0.95rem' }}>Novo Produto</span>
+                    </button>
+
+                    <button onClick={() => router.push('/dashboard/clients')} style={{ ...glassStyle, padding: '1.5rem', border: '1px solid rgba(236, 72, 153, 0.2)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.5)'; e.currentTarget.style.background = 'rgba(236, 72, 153, 0.05)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; }}>
+                        <div style={{ padding: '12px', background: 'rgba(236, 72, 153, 0.15)', borderRadius: '14px', color: '#ec4899', boxShadow: '0 4px 12px rgba(236, 72, 153, 0.1)' }}>
+                            <Users size={26} />
+                        </div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '0.95rem' }}>Novo Cliente</span>
+                    </button>
+
+                    <button onClick={() => router.push('/dashboard/financial')} style={{ ...glassStyle, padding: '1.5rem', border: '1px solid rgba(249, 115, 22, 0.2)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(249, 115, 22, 0.5)'; e.currentTarget.style.background = 'rgba(249, 115, 22, 0.05)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; }}>
+                        <div style={{ padding: '12px', background: 'rgba(249, 115, 22, 0.15)', borderRadius: '14px', color: '#f97316', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.1)' }}>
+                            <DollarSign size={26} />
+                        </div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '0.95rem' }}>Financeiro</span>
+                    </button>
+                </div>
+            </div>
+
             {/* KPI Cards Grid */}
             <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
                 {/* Cards mantidos iguais... */}
@@ -426,45 +459,8 @@ export default function DashboardPage() {
 
             {/* Dashboard Content Grid */}
             <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-                {/* Left Column: Quick Actions & Recent Sales */}
+                {/* Left Column: Recent Sales */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                    {/* Quick Actions */}
-                    <div style={{ ...glassStyle, padding: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'white', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <TrendingUp size={18} color="#34d399" />
-                            Acesso Rápido
-                        </h3>
-                        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
-                            <button onClick={() => router.push('/dashboard/sales')} style={{ ...glassStyle, padding: '1.5rem', border: '1px solid rgba(52, 211, 153, 0.3)', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                <div style={{ padding: '12px', background: 'rgba(52, 211, 153, 0.2)', borderRadius: '50%', color: '#34d399' }}>
-                                    <ShoppingCart size={24} />
-                                </div>
-                                <span style={{ color: 'white', fontWeight: 600 }}>Nova Venda</span>
-                            </button>
-
-                            <button onClick={() => router.push('/dashboard/products/new')} style={{ ...glassStyle, padding: '1.5rem', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.2)', borderRadius: '50%', color: '#3b82f6' }}>
-                                    <Package size={24} />
-                                </div>
-                                <span style={{ color: 'white', fontWeight: 600 }}>Novo Produto</span>
-                            </button>
-
-                            <button onClick={() => router.push('/dashboard/clients')} style={{ ...glassStyle, padding: '1.5rem', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                <div style={{ padding: '12px', background: 'rgba(236, 72, 153, 0.2)', borderRadius: '50%', color: '#ec4899' }}>
-                                    <Users size={24} />
-                                </div>
-                                <span style={{ color: 'white', fontWeight: 600 }}>Novo Cliente</span>
-                            </button>
-
-                            <button onClick={() => router.push('/dashboard/financial')} style={{ ...glassStyle, padding: '1.5rem', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                <div style={{ padding: '12px', background: 'rgba(249, 115, 22, 0.2)', borderRadius: '50%', color: '#f97316' }}>
-                                    <DollarSign size={24} />
-                                </div>
-                                <span style={{ color: 'white', fontWeight: 600 }}>Financeiro</span>
-                            </button>
-                        </div>
-                    </div>
 
                     {/* Recent Sales */}
                     <div style={{ ...glassStyle, padding: '1.5rem' }}>
