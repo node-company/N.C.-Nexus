@@ -319,16 +319,17 @@ export default function FinancialPage() {
     return (
         <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', paddingBottom: '5rem', animation: 'fadeIn 0.6s ease', overflowX: 'hidden' }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ maxWidth: '100%' }}>
-                    <h1 style={{ fontSize: '2.25rem', fontWeight: 800, background: 'linear-gradient(to right, #34d399, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word', lineHeight: 1.2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+                <div style={{ flex: '1', minWidth: '280px' }}>
+                    <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, #34d399, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word', lineHeight: 1.1 }}>
                         Financeiro
                     </h1>
-                    <p style={{ color: '#9ca3af', marginTop: '0.25rem' }}>Fluxo de Caixa e Resultados</p>
+                    <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1.1rem' }}>Fluxo de Caixa e Resultados</p>
                 </div>
                 <Button
                     onClick={() => handleOpenModal()}
-                    style={{ background: '#059669', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(5, 150, 105, 0.2)' }}
+                    className="mobile-full-width"
+                    style={{ background: '#059669', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px 24px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)', height: 'auto' }}
                 >
                     <Plus size={20} /> Nova Movimentação
                 </Button>
@@ -409,7 +410,7 @@ export default function FinancialPage() {
             </div>
 
             {/* KPI Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100%, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
                 {/* Revenue */}
                 <div style={{ ...glassStyle, padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
                     <div style={{ position: 'absolute', top: 0, right: 0, padding: '1rem', opacity: 0.1 }}>
@@ -600,54 +601,62 @@ export default function FinancialPage() {
 
                         {/* Mobile Card View */}
                         <div className="mobile-card-view">
-                            <div style={{ padding: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {records.map((rec) => (
-                                    <div key={rec.id} className="mobile-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1rem' }}>
+                                    <div key={rec.id} className="mobile-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '16px' }}>
 
-                                        {/* Icon */}
-                                        <div style={{
-                                            padding: '12px', borderRadius: '12px',
-                                            background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                            color: rec.type === 'INCOME' ? '#10b981' : '#ef4444',
-                                            display: 'inline-flex', marginBottom: '0.5rem',
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                                        }}>
-                                            {rec.source === 'SALE' ? <ShoppingBag size={24} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={24} /> : <ArrowDownCircle size={24} />)}
-                                        </div>
-
-                                        {/* Main Info */}
-                                        <div style={{ width: '100%' }}>
-                                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem', wordBreak: 'break-word', lineHeight: 1.3 }}>
-                                                {rec.description}
-                                            </h3>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', color: '#9ca3af' }}>
-                                                <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{rec.category || 'Geral'}</span>
-                                                <span>{format(new Date(rec.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}</span>
+                                        {/* Header of Card */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                <div style={{
+                                                    padding: '10px', borderRadius: '12px',
+                                                    background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                    color: rec.type === 'INCOME' ? '#10b981' : '#ef4444'
+                                                }}>
+                                                    {rec.source === 'SALE' ? <ShoppingBag size={20} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />)}
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'white', margin: 0 }}>{rec.description}</h3>
+                                                    <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{rec.source === 'SALE' ? 'Venda Automática' : 'Manual'}</span>
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <span style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block' }}>{format(new Date(rec.date), "dd/MM/yy", { locale: ptBR })}</span>
+                                                <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', fontSize: '0.65rem', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.05)', textTransform: 'uppercase' }}>
+                                                    {rec.category || 'Geral'}
+                                                </span>
                                             </div>
                                         </div>
 
-                                        {/* Amount */}
-                                        <div style={{ margin: '0.5rem 0', width: '100%', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>Valor</span>
-                                            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
-                                                {rec.type === 'INCOME' ? '+' : '-'} {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        {/* Amount Section */}
+                                        <div style={{
+                                            padding: '1rem',
+                                            background: 'rgba(0,0,0,0.15)',
+                                            borderRadius: '12px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}>
+                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>Valor total</span>
+                                            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
+                                                {rec.type === 'INCOME' ? '+' : '-'} R$ {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
 
                                         {/* Actions */}
                                         {rec.source === 'MANUAL' && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                                                 <button
                                                     onClick={() => handleOpenModal(rec)}
-                                                    style={{ width: '100%', padding: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
                                                 >
-                                                    <Edit size={18} /> Editar Movimentação
+                                                    <Edit size={16} /> Editar
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteClick(rec.id)}
-                                                    style={{ width: '100%', padding: '14px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
                                                 >
-                                                    <Trash2 size={18} /> Excluir Registro
+                                                    <Trash2 size={16} /> Excluir
                                                 </button>
                                             </div>
                                         )}
