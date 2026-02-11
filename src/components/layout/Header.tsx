@@ -35,22 +35,11 @@ export function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 <Menu size={24} />
             </button>
 
-            {/* Spacer for desktop to keep user info on right if menu hidden */}
+            {/* Spacer for desktop */}
             <div className="desktop-only" />
 
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--color-text-main)" }}>
-                        {user?.email}
-                    </p>
-                    <p style={{ fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
-                        Administrador
-                    </p>
-                </div>
-                <div style={{ width: "1px", height: "30px", background: "rgba(255,255,255,0.1)" }}></div>
-                <Button variant="ghost" size="sm" onClick={() => signOut()}>
-                    Sair
-                </Button>
+                {/* User info moved to sidebar */}
             </div>
         </header>
     );

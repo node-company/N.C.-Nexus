@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { createClient } from "@/lib/supabase/client";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -9,6 +10,7 @@ import { X } from "lucide-react";
 
 export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
     const pathname = usePathname();
+    const { user } = useAuth();
     const {
         can_manage_products,
         can_sell,
@@ -113,7 +115,16 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                     })}
                 </nav>
 
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', marginTop: '1rem' }}>
+                    <div style={{ padding: "0 1rem 1rem 1rem" }}>
+                        <p style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--color-text-main)", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {user?.email}
+                        </p>
+                        <p style={{ fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
+                            Administrador
+                        </p>
+                    </div>
+
                     <button
                         onClick={handleLogout}
                         style={{
@@ -124,11 +135,11 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
                             width: "100%",
                             borderRadius: "var(--radius-sm)",
                             color: "#ef4444",
-                            background: "transparent",
-                            border: "none",
+                            background: "rgba(239, 68, 68, 0.1)",
+                            border: "1px solid rgba(239, 68, 68, 0.2)",
                             cursor: "pointer",
                             fontWeight: 500,
-                            transition: "all 0.2s" // Added simple hover effect later or relies on glass panel
+                            transition: "all 0.2s"
                         }}
                     >
                         <span>🚪</span>
