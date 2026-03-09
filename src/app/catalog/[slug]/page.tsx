@@ -136,7 +136,8 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
     const addToCart = (item: CatalogItem, variantId?: string, variantName?: string) => {
         if (item.type === 'PRODUCT') {
             const product = item as Product;
-            if (!variantId && product.product_variants && product.product_variants.length > 0) {
+            const hasVariants = Array.isArray(product.product_variants) && product.product_variants.length > 0;
+            if (!variantId && hasVariants) {
                 setSelectedProductForVariant(product);
                 return;
             }
@@ -368,8 +369,8 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                         <button
                                             disabled={item.type === 'PRODUCT' && (
                                                 (item as Product).product_variants && (item as Product).product_variants.length > 0
-                                                    ? (item as Product).product_variants.reduce((acc, v) => acc + v.stock_quantity, 0) === 0
-                                                    : ((item as Product).stock_quantity || 0) === 0
+                                                    ? (item as Product).product_variants.reduce((acc, v) => acc + (v.stock_quantity || 0), 0) <= 0
+                                                    : ((item as Product).stock_quantity || 0) <= 0
                                             )}
                                             onClick={() => addToCart(item)}
                                             style={{
@@ -381,17 +382,20 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                                 fontWeight: 800,
                                                 fontSize: '0.8rem',
                                                 cursor: 'pointer',
+                                                touchAction: 'manipulation',
+                                                userSelect: 'none',
+                                                WebkitTapHighlightColor: 'transparent',
                                                 opacity: (item.type === 'PRODUCT' && (
                                                     (item as Product).product_variants && (item as Product).product_variants.length > 0
-                                                        ? (item as Product).product_variants.reduce((acc, v) => acc + v.stock_quantity, 0) === 0
-                                                        : ((item as Product).stock_quantity || 0) === 0
+                                                        ? (item as Product).product_variants.reduce((acc, v) => acc + (v.stock_quantity || 0), 0) <= 0
+                                                        : ((item as Product).stock_quantity || 0) <= 0
                                                 )) ? 0.5 : 1
                                             }}
                                         >
                                             {(item.type === 'PRODUCT' && (
                                                 (item as Product).product_variants && (item as Product).product_variants.length > 0
-                                                    ? (item as Product).product_variants.reduce((acc, v) => acc + v.stock_quantity, 0) === 0
-                                                    : ((item as Product).stock_quantity || 0) === 0
+                                                    ? (item as Product).product_variants.reduce((acc, v) => acc + (v.stock_quantity || 0), 0) <= 0
+                                                    : ((item as Product).stock_quantity || 0) <= 0
                                             )) ? 'Esgotado' : 'Adicionar'}
                                         </button>
                                     </div>
