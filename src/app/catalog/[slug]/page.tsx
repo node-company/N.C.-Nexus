@@ -436,7 +436,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
 
             {/* Cart Drawer */}
             {showCart && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 200, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
                     <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: '#121214', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 800 }}>Seu Carrinho</h3>
@@ -513,7 +513,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
 
             {/* Order Success Modal */}
             {orderSuccess && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                     <div style={{ background: '#121214', borderRadius: '32px', padding: '3rem 2rem', width: '100%', maxWidth: '400px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
                         <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto' }}>
                             <CheckCircle2 size={48} color="#10b981" />
@@ -532,7 +532,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
 
             {/* Variant Selection Modal */}
             {selectedProductForVariant && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 300, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
                     <div style={{ background: '#121214', borderRadius: '24px', width: '100%', maxWidth: '400px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.05)' }}>
                         <div style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <h3 style={{ fontSize: '1.1rem', fontWeight: 800 }}>Escolha o Tamanho</h3>
@@ -563,15 +563,18 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                             textAlign: 'left',
                                             cursor: variant.stock_quantity > 0 ? 'pointer' : 'not-allowed',
                                             opacity: variant.stock_quantity === 0 ? 0.3 : 1,
-                                            transition: 'all 0.2s'
+                                            transition: 'all 0.2s',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            width: '100%'
                                         }}
                                     >
-                                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{variant.size}</div>
-                                        <div style={{ fontSize: '0.7rem', color: variant.stock_quantity === 0 ? '#ef4444' : '#fbbf24' }}>
+                                        <span style={{ fontWeight: 700, fontSize: '0.9rem', display: 'block' }}>{variant.size}</span>
+                                        <span style={{ fontSize: '0.7rem', color: variant.stock_quantity === 0 ? '#ef4444' : '#fbbf24', display: 'block' }}>
                                             {variant.stock_quantity === 0 ? 'Esgotado' :
                                                 variant.stock_quantity === 1 ? 'Última unidade!' :
                                                     variant.stock_quantity <= 3 ? `Últimas ${variant.stock_quantity} un.` : ''}
-                                        </div>
+                                        </span>
                                     </button>
                                 ))}
                             </div>
