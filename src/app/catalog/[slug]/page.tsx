@@ -133,10 +133,16 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
         return matchesSearch && matchesCategory;
     });
 
-    const addToCart = (item: CatalogItem, variantId?: string, variantName?: string) => {
+    const addToCart = (item: CatalogItem, variantId?: string, variantName?: string, e?: React.MouseEvent) => {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         if (item.type === 'PRODUCT') {
             const product = item as Product;
-            const hasVariants = Array.isArray(product.product_variants) && product.product_variants.length > 0;
+            const variants = product.product_variants;
+            const hasVariants = variants && typeof variants === 'object' && 'length' in variants && (variants as any).length > 0;
+
             if (!variantId && hasVariants) {
                 setSelectedProductForVariant(product);
                 return;
@@ -372,13 +378,15 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                                     ? (item as Product).product_variants.reduce((acc, v) => acc + (v.stock_quantity || 0), 0) <= 0
                                                     : ((item as Product).stock_quantity || 0) <= 0
                                             )}
-                                            onClick={() => addToCart(item)}
+                                            onClick={(e) => addToCart(item, undefined, undefined, e)}
                                             style={{
                                                 background: 'rgba(16, 185, 129, 0.1)',
                                                 color: '#10b981',
                                                 border: 'none',
                                                 padding: '8px 16px',
                                                 borderRadius: '12px',
+                                                position: 'relative',
+                                                zIndex: 10,
                                                 fontWeight: 800,
                                                 fontSize: '0.8rem',
                                                 cursor: 'pointer',
@@ -557,7 +565,7 @@ export default function CatalogPage({ params }: { params: { slug: string } }) {
                                     <button
                                         key={variant.id}
                                         disabled={variant.stock_quantity === 0}
-                                        onClick={() => addToCart(selectedProductForVariant, variant.id, variant.size)}
+                                        onClick={(e) => addToCart(selectedProductForVariant, variant.id, variant.size, e)}
                                         style={{
                                             padding: '12px',
                                             borderRadius: '12px',
