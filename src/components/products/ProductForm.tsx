@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Save, Loader2, Image as ImageIcon, DollarSign, Package, FileText, Tag, Truck, Ruler, X, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { PricingCalculator } from "@/components/calculator/PricingCalculator";
+import { Calculator } from "lucide-react";
 
 interface ProductVariant {
     id?: string;
@@ -34,6 +36,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
     const router = useRouter();
     const supabase = createClient();
     const [loading, setLoading] = useState(false);
+    const [showCalculator, setShowCalculator] = useState(false);
 
     // Form States
     const [formData, setFormData] = useState({
@@ -593,9 +596,14 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
                     {/* Pricing Panel */}
                     <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
-                            <DollarSign size={18} style={{ color: '#10b981' }} /> Financeiro
-                        </h3>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                                <DollarSign size={18} style={{ color: '#10b981' }} /> Financeiro
+                            </h3>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => setShowCalculator(true)} style={{ fontSize: '0.8rem', height: '32px', background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.2)' }}>
+                                <Calculator size={14} style={{ marginRight: '0.5rem' }} /> Calcular Preço Ideal
+                            </Button>
+                        </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                             <div>
@@ -653,6 +661,28 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
                 </div>
             </div>
+
+            {/* Modal Calculadora */}
+            {showCalculator && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
+                    zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '1rem'
+                }}>
+                    <div style={{ background: '#111827', width: '100%', maxWidth: '1000px', maxHeight: '95vh', overflowY: 'auto', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <PricingCalculator
+                            isModal={true}
+                            initialProductCost={formData.cost_price}
+                            onClose={() => setShowCalculator(false)}
+                            onApplyPrice={(price, cost) => {
+                                setFormData(prev => ({ ...prev, price, cost_price: cost }));
+                                setShowCalculator(false);
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </form>
     );
 }
