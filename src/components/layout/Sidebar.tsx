@@ -30,8 +30,8 @@ export function Sidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => v
         { label: "Visão Geral", href: "/dashboard", icon: "📊", show: true },
         { label: "Vendas", href: "/dashboard/sales", icon: "💰", show: can_sell },
         { label: "Produtos", href: "/dashboard/products", icon: "📦", show: can_manage_products },
-        { label: "Calculadora", href: "/dashboard/calculator", icon: "🧮", show: can_manage_products },
         { label: "Serviços", href: "/dashboard/services", icon: "🛠️", show: can_manage_products },
+        { label: "Calculadora", href: "/dashboard/calculator", icon: "🧮", show: can_manage_products },
         { label: "Estoque", href: "/dashboard/inventory", icon: "🏭", show: can_manage_products }, // Inventory usually goes with products
         { label: "Clientes", href: "/dashboard/clients", icon: "👥", show: true }, // Everyone usually can see clients? Or maybe 'can_sell'
         { label: "Financeiro", href: "/dashboard/financial", icon: "💵", show: can_view_reports }, // Using reports permission for now, or create new one
