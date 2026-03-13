@@ -596,12 +596,27 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
                     {/* Pricing Panel */}
                     <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0, flexWrap: 'wrap', gap: '0.75rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
                                 <DollarSign size={18} style={{ color: '#10b981' }} /> Financeiro
                             </h3>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => setShowCalculator(true)} style={{ fontSize: '0.8rem', height: '32px', background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.2)' }}>
-                                <Calculator size={14} style={{ marginRight: '0.5rem' }} /> Calcular Preço Ideal
+                            <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setShowCalculator(true)} 
+                                style={{ 
+                                    fontSize: '0.8rem', 
+                                    height: '36px', 
+                                    background: 'rgba(52, 211, 153, 0.1)', 
+                                    color: '#34d399', 
+                                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                                    borderRadius: '8px',
+                                    padding: '0 12px',
+                                    fontWeight: 600
+                                }}
+                            >
+                                <Calculator size={16} style={{ marginRight: '0.5rem' }} /> Calcular Preço Ideal
                             </Button>
                         </div>
 

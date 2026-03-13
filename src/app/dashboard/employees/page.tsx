@@ -92,45 +92,101 @@ export default function EmployeesPage() {
     };
 
     return (
-        <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem', animation: 'fadeIn 0.6s ease' }}>
+        <div className="main-container" style={{ 
+            width: '100%',
+            maxWidth: '1200px', 
+            margin: '0 auto', 
+            paddingBottom: '5rem', 
+            animation: 'fadeIn 0.6s ease',
+            padding: '0', // Reset to 0, handle via dashboard-content
+            boxSizing: 'border-box',
+            // @ts-ignore
+            '--panel-padding': '1.5rem'
+        }}>
+            <style jsx>{`
+                * { box-sizing: border-box; }
+                @media (max-width: 768px) {
+                    .main-container { padding: 0 !important; overflow-x: hidden !important; }
+                    div { --panel-padding: 1rem !important; }
+                    .desktop-only { display: none !important; }
+                    .mobile-full-width { width: 100% !important; margin-top: 1rem; }
+                    .desktop-table-view { display: none !important; }
+                    .mobile-card-view { 
+                        display: block !important; 
+                        width: auto !important;
+                        padding: 0 0.5rem !important;
+                        margin: 0 !important;
+                    }
+                    .search-container { 
+                        width: auto !important;
+                        margin: 0 0.5rem 2.5rem 0.5rem !important;
+                    }
+                    .mobile-card {
+                        padding: 1rem !important;
+                        width: 100% !important;
+                        margin-bottom: 1rem !important;
+                        box-sizing: border-box !important;
+                    }
+                }
+                @media (min-width: 769px) {
+                    .desktop-table-view { display: block !important; }
+                    .mobile-card-view { display: none !important; }
+                    .mobile-fab { display: none !important; }
+                    .search-container { max-width: 500px !important; }
+                }
+            `}</style>
+
             {/* Header Section */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ maxWidth: '100%' }}>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem', padding: '0 0.5rem' }}>
+                <div style={{ flex: '1', minWidth: 0 }}>
+                    <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, lineHeight: 1.1 }}>
                         Funcionários
                     </h1>
-                    <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Gerencie sua equipe.</p>
+                    <p style={{ color: '#9ca3af', marginTop: '0.25rem', fontSize: '1rem' }}>Gerencie sua equipe e permissões</p>
                 </div>
-                <Link href="/dashboard/employees/new">
+                <Link href="/dashboard/employees/new" className="desktop-only">
                     <Button style={{
                         background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
                         border: 'none',
                         padding: '12px 24px',
-                        height: 'auto',
+                        height: '48px',
                         fontSize: '1rem',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
+                        gap: '8px',
+                        borderRadius: '12px',
                         boxShadow: '0 4px 14px 0 rgba(0,0,0,0.3)'
                     }}>
-                        <Plus size={20} />
-                        Novo Funcionário
+                        <Plus size={20} /> Novo Funcionário
                     </Button>
                 </Link>
             </div>
 
+            {/* Mobile FAB */}
+            <Link href="/dashboard/employees/new" className="mobile-fab" style={{
+                position: 'fixed', bottom: '2rem', right: '1.5rem', zIndex: 50,
+                width: '60px', height: '60px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: 'none', color: 'white'
+            }}>
+                <Plus size={28} />
+            </Link>
+
             {/* Search Bar */}
-            <div style={{
+            <div className="search-container" style={{
                 ...glassStyle,
-                marginBottom: '2rem',
-                padding: '1rem',
+                marginBottom: '2.5rem',
+                padding: '0.75rem 1.25rem',
                 display: 'flex',
                 alignItems: 'center',
                 width: '100%',
-                maxWidth: '500px'
+                maxWidth: '500px',
+                background: 'rgba(0,0,0,0.2)',
+                boxSizing: 'border-box'
             }}>
-                <Search style={{ color: '#9ca3af', marginRight: '1rem' }} size={20} />
+                <Search style={{ color: '#9ca3af', marginRight: '0.75rem' }} size={18} />
                 <input
                     type="text"
                     placeholder="Buscar por nome ou cargo..."
@@ -139,7 +195,9 @@ export default function EmployeesPage() {
                         border: 'none',
                         outline: 'none',
                         color: 'white',
-                        width: '100%',
+                        flex: 1,
+                        width: '0', // Allow flexbox to control width
+                        minWidth: 0,
                         fontSize: '1rem'
                     }}
                     value={searchTerm}
@@ -242,75 +300,118 @@ export default function EmployeesPage() {
                         </div>
                     </div>
 
-                    {/* Mobile Card View */}
                     <div className="mobile-card-view">
-                        <div style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
                             {filteredEmployees.map((employee) => (
-                                <div key={employee.id} className="mobile-card" style={{ padding: '1.25rem', alignItems: 'center', textAlign: 'center', gap: '0.75rem' }}>
+                                <div key={employee.id} className="mobile-card" style={{ 
+                                    background: 'rgba(255, 255, 255, 0.02)', 
+                                    border: '1px solid rgba(255, 255, 255, 0.05)', 
+                                    borderRadius: '20px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '1.25rem',
+                                    backdropFilter: 'blur(10px)',
+                                    overflow: 'hidden'
+                                }}>
+                                    {/* Header: Avatar and Identity */}
+                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                        <div style={{
+                                            width: '56px', height: '56px', borderRadius: '50%',
+                                            background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
+                                        }}>
+                                            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'white' }}>
+                                                {employee.name.charAt(0).toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', overflow: 'hidden' }}>
+                                            <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'white', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                {employee.name}
+                                            </h3>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                <span style={{ fontSize: '0.85rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                    <Briefcase size={14} /> {employee.role}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '0.65rem', padding: '2px 8px', borderRadius: '20px',
+                                                    color: employee.active ? '#10b981' : '#ef4444',
+                                                    background: employee.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                    border: '1px solid rgba(255,255,255,0.05)',
+                                                    textTransform: 'uppercase', fontWeight: 800
+                                                }}>
+                                                    {employee.active ? 'Ativo' : 'Inativo'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                    {/* Avatar */}
-                                    <div style={{
-                                        width: '64px', height: '64px', borderRadius: '50%',
-                                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden',
-                                        marginBottom: '0.25rem'
+                                    {/* Info Section */}
+                                    <div style={{ 
+                                        padding: '1rem', 
+                                        background: 'rgba(0,0,0,0.2)', 
+                                        borderRadius: '12px', 
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        gap: '0.75rem',
+                                        border: '1px solid rgba(255,255,255,0.03)'
                                     }}>
-                                        <span style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>
-                                            {employee.name.charAt(0).toUpperCase()}
-                                        </span>
-                                    </div>
-
-                                    {/* Identity */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', width: '100%' }}>
-                                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', wordBreak: 'break-word', lineHeight: 1.2 }}>
-                                            {employee.name}
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                            <span style={{ fontSize: '0.9rem', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <Briefcase size={14} /> {employee.role}
-                                            </span>
-                                            <span style={{
-                                                fontSize: '0.75rem', padding: '2px 8px', borderRadius: '4px',
-                                                color: employee.active ? '#34d399' : '#ef4444',
-                                                background: employee.active ? 'rgba(52, 211, 153, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                                border: employee.active ? '1px solid rgba(52, 211, 153, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)'
-                                            }}>
-                                                {employee.active ? 'Ativo' : 'Inativo'}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Divider */}
-                                    <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.05)', margin: '0.5rem 0' }}></div>
-
-                                    {/* Contact */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
                                         {employee.email && (
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#d1d5db', wordBreak: 'break-all' }}>
-                                                <Mail size={14} style={{ flexShrink: 0, color: '#4b5563' }} /> {employee.email}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem', color: '#d1d5db' }}>
+                                                <Mail size={16} style={{ color: '#6b7280', flexShrink: 0 }} /> 
+                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>{employee.email}</span>
                                             </div>
                                         )}
                                         {employee.phone && (
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#d1d5db' }}>
-                                                <Phone size={14} style={{ flexShrink: 0, color: '#4b5563' }} /> {employee.phone}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.875rem', color: '#d1d5db' }}>
+                                                <Phone size={16} style={{ color: '#6b7280', flexShrink: 0 }} /> {employee.phone}
                                             </div>
                                         )}
                                     </div>
 
                                     {/* Actions */}
-                                    <div style={{ display: 'flex', gap: '0.75rem', width: '100%', marginTop: '0.75rem' }}>
-                                        <Button
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                                        <button
                                             onClick={() => router.push(`/dashboard/employees/${employee.id}`)}
-                                            style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '8px', fontWeight: 600 }}
+                                            style={{ 
+                                                flex: '1',
+                                                minWidth: '120px',
+                                                padding: '0.85rem', 
+                                                background: 'rgba(255, 255, 255, 0.05)', 
+                                                border: '1px solid rgba(255, 255, 255, 0.1)', 
+                                                color: 'white', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                gap: '8px', 
+                                                borderRadius: '12px', 
+                                                fontWeight: 700,
+                                                fontSize: '0.9rem',
+                                                cursor: 'pointer'
+                                            }}
                                         >
                                             <Edit size={16} /> Editar
-                                        </Button>
-                                        <Button
+                                        </button>
+                                        <button
                                             onClick={() => handleDelete(employee.id)}
-                                            style={{ flex: 1, padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', borderRadius: '8px', fontWeight: 600 }}
+                                            style={{ 
+                                                flex: '1',
+                                                minWidth: '120px',
+                                                padding: '0.85rem', 
+                                                background: 'rgba(239, 68, 68, 0.1)', 
+                                                border: '1px solid rgba(239, 68, 68, 0.2)', 
+                                                color: '#ef4444', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                gap: '8px', 
+                                                borderRadius: '12px', 
+                                                fontWeight: 700,
+                                                fontSize: '0.9rem',
+                                                cursor: 'pointer'
+                                            }}
                                         >
                                             <Trash2 size={16} /> Excluir
-                                        </Button>
+                                        </button>
                                     </div>
                                 </div>
                             ))}

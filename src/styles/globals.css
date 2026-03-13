@@ -101,6 +101,8 @@ a {
   transition: margin-left 0.3s ease-in-out;
   margin-left: 250px;
   /* Default Desktop */
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Overlay for Mobile */
@@ -330,4 +332,13 @@ a {
   .responsive-title {
     font-size: 2.5rem !important;
   }
+}
+
+/* Scrollbar Hide Utility */
+.mobile-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+.mobile-tabs-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

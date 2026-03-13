@@ -27,6 +27,14 @@ export default function SettingsPage() {
     const supabase = createClient();
     const { can_manage_settings, loading: permissionsLoading } = usePermissions();
     const [isMounted, setIsMounted] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     if (!permissionsLoading && !can_manage_settings) {
         return (
@@ -59,6 +67,7 @@ export default function SettingsPage() {
         border: '1px solid rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(12px)',
         borderRadius: '16px',
+        padding: isMobile ? '1.25rem' : '2rem',
     };
 
     const inputStyle = {
@@ -211,9 +220,9 @@ export default function SettingsPage() {
 
     return (
         <div style={{ maxWidth: "800px", margin: "0 auto", paddingBottom: "4rem", animation: 'fadeIn 0.6s ease' }}>
-            <div style={{ marginBottom: "2rem" }}>
-                <h1 style={{ fontSize: '2.25rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
-                    Configurações da Empresa
+            <div style={{ marginBottom: "2rem", textAlign: isMobile ? 'center' : 'left' }}>
+                <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                    Configurações
                 </h1>
                 <p style={{ color: '#9ca3af', marginTop: '0.25rem' }}>Personalize seus documentos e recibos</p>
             </div>
@@ -226,7 +235,7 @@ export default function SettingsPage() {
                         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Building size={20} color="#34d399" /> Informações Básicas
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                             <div>
                                 <label style={labelStyle}>Nome da Empresa</label>
                                 <input type="text" placeholder="Minha Loja Ltda" style={inputStyle} value={settings.name} onChange={e => setSettings({ ...settings, name: e.target.value })} />
@@ -243,7 +252,7 @@ export default function SettingsPage() {
                         <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <MapPin size={20} color="#3b82f6" /> Contato e Endereço
                         </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                             <div>
                                 <label style={labelStyle}>Email de Contato</label>
                                 <div style={{ position: 'relative' }}>
@@ -272,7 +281,7 @@ export default function SettingsPage() {
                         </h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             <label style={labelStyle}>Logo da Empresa</label>
-                            <div style={{ maxWidth: '400px' }}>
+                            <div style={{ maxWidth: isMobile ? '100%' : '400px' }}>
                                 <ImageUpload
                                     value={settings.logo_url}
                                     onChange={(url) => {
@@ -299,8 +308,10 @@ export default function SettingsPage() {
                             borderRadius: '12px',
                             border: '1px solid rgba(255,255,255,0.05)',
                             display: 'flex',
+                            flexDirection: isMobile ? 'column' : 'row',
                             justifyContent: 'space-between',
-                            alignItems: 'center'
+                            alignItems: isMobile ? 'flex-start' : 'center',
+                            gap: isMobile ? '1.5rem' : '1rem'
                         }}>
                             <div>
                                 <div style={{ fontSize: '0.9rem', color: '#9ca3af', marginBottom: '0.25rem' }}>Plano Atual</div>
@@ -377,7 +388,7 @@ export default function SettingsPage() {
                             </button>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                             <div>
                                 <label style={labelStyle}>Link do seu Catálogo (Slug)</label>
                                 <div style={{ position: 'relative' }}>
@@ -414,9 +425,9 @@ export default function SettingsPage() {
                                 alignItems: 'center',
                                 justifyContent: 'space-between'
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: '10px' }}>
                                     <Link2 size={18} color="#a78bfa" />
-                                    <span style={{ color: '#a78bfa', fontSize: '0.9rem', fontWeight: 600 }}>
+                                    <span style={{ color: '#a78bfa', fontSize: '0.9rem', fontWeight: 600, wordBreak: 'break-all' }}>
                                         {isMounted ? `${window.location.protocol}//${window.location.host}/catalog/${settings.catalog_slug}` : 'Carregando link...'}
                                     </span>
                                 </div>
@@ -427,7 +438,7 @@ export default function SettingsPage() {
                                         navigator.clipboard.writeText(url);
                                         alert("Link copiado!");
                                     }}
-                                    style={{ background: 'rgba(167, 139, 250, 0.2)', color: '#a78bfa', border: 'none', padding: '6px 12px', fontSize: '0.8rem' }}
+                                    style={{ background: 'rgba(167, 139, 250, 0.2)', color: '#a78bfa', border: 'none', padding: '6px 12px', fontSize: '0.8rem', width: isMobile ? '100%' : 'auto', marginTop: isMobile ? '1rem' : 0 }}
                                 >
                                     <Copy size={14} style={{ marginRight: '4px' }} /> Copiar
                                 </Button>

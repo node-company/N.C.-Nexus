@@ -15,7 +15,8 @@ import {
     Wallet,
     X,
     Edit,
-    Trash2
+    Trash2,
+    Loader2
 } from "lucide-react";
 import {
     BarChart,
@@ -317,19 +318,45 @@ export default function FinancialPage() {
     };
 
     return (
-        <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', paddingBottom: '5rem', animation: 'fadeIn 0.6s ease', overflowX: 'hidden' }}>
+        <div style={{ 
+            maxWidth: '1200px', 
+            width: '100%', 
+            margin: '0 auto', 
+            paddingBottom: '5rem', 
+            animation: 'fadeIn 0.6s ease', 
+            overflowX: 'hidden',
+            padding: '1rem',
+            // @ts-ignore
+            '--panel-padding': '1.5rem'
+        }}>
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    div { --panel-padding: 1rem !important; }
+                    .mobile-full-width { width: 100% !important; margin-top: 1rem; }
+                    .chart-container { height: 250px !important; padding: var(--panel-padding) !important; }
+                    .desktop-table-view { display: none !important; }
+                    .mobile-card-view { display: block !important; }
+                    .date-filters-container { flex-direction: column !important; align-items: stretch !important; }
+                    .date-range-inputs { width: 100% !important; justify-content: space-between !important; }
+                }
+                @media (min-width: 769px) {
+                    .desktop-table-view { display: block !important; }
+                    .mobile-card-view { display: none !important; }
+                }
+            `}</style>
+
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1.5rem' }}>
-                <div style={{ flex: '1', minWidth: '280px' }}>
-                    <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, #34d399, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word', lineHeight: 1.1 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ flex: '1', minWidth: '250px' }}>
+                    <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, #34d399, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, lineHeight: 1.1 }}>
                         Financeiro
                     </h1>
-                    <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1.1rem' }}>Fluxo de Caixa e Resultados</p>
+                    <p style={{ color: '#9ca3af', marginTop: '0.25rem', fontSize: '1rem' }}>Fluxo de Caixa e Resultados</p>
                 </div>
                 <Button
                     onClick={() => handleOpenModal()}
                     className="mobile-full-width"
-                    style={{ background: '#059669', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '14px 24px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.2)', height: 'auto' }}
+                    style={{ background: 'linear-gradient(90deg, #10b981, #059669)', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 24px', borderRadius: '12px', height: '48px', border: 'none' }}
                 >
                     <Plus size={20} /> Nova Movimentação
                 </Button>
@@ -344,17 +371,18 @@ export default function FinancialPage() {
                 marginBottom: '2rem',
                 flexWrap: 'wrap'
             }}>
-                <div style={{
+                <div className="date-filters-container" style={{
                     ...glassStyle,
-                    padding: '0.75rem 1.5rem',
+                    padding: '0.75rem 1rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '1rem',
+                    gap: '0.75rem',
                     flex: 1,
-                    minWidth: '300px'
+                    minWidth: 'auto',
+                    overflow: 'hidden'
                 }}>
-                    <Calendar size={18} style={{ color: '#9ca3af' }} />
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Calendar size={18} style={{ color: '#9ca3af', flexShrink: 0 }} />
+                    <div className="date-range-inputs" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
                         <input
                             type="date"
                             value={startDate}
@@ -364,11 +392,12 @@ export default function FinancialPage() {
                                 border: 'none',
                                 color: 'white',
                                 outline: 'none',
-                                fontSize: '0.875rem',
-                                cursor: 'pointer'
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                width: '110px'
                             }}
                         />
-                        <span style={{ color: '#4b5563' }}>até</span>
+                        <span style={{ color: '#4b5563', fontSize: '0.75rem' }}>até</span>
                         <input
                             type="date"
                             value={endDate}
@@ -378,8 +407,9 @@ export default function FinancialPage() {
                                 border: 'none',
                                 color: 'white',
                                 outline: 'none',
-                                fontSize: '0.875rem',
-                                cursor: 'pointer'
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                width: '110px'
                             }}
                         />
                     </div>
@@ -410,46 +440,46 @@ export default function FinancialPage() {
             </div>
 
             {/* KPI Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
                 {/* Revenue */}
-                <div style={{ ...glassStyle, padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, right: 0, padding: '1rem', opacity: 0.1 }}>
-                        <TrendingUp size={100} style={{ color: '#10b981' }} />
+                <div style={{ ...glassStyle, padding: 'var(--panel-padding)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.05 }}>
+                        <TrendingUp size={120} style={{ color: '#10b981' }} />
                     </div>
-                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Receitas Totais</p>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'white', marginTop: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                        <span style={{ color: '#34d399' }}>R$</span>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>Receitas Totais</p>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span style={{ color: '#34d399', fontSize: '1.25rem' }}>R$</span>
                         {summary.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </h2>
                 </div>
 
                 {/* Expenses */}
-                <div style={{ ...glassStyle, padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, right: 0, padding: '1rem', opacity: 0.1 }}>
-                        <TrendingDown size={100} style={{ color: '#ef4444' }} />
+                <div style={{ ...glassStyle, padding: 'var(--panel-padding)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.05 }}>
+                        <TrendingDown size={120} style={{ color: '#ef4444' }} />
                     </div>
-                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Despesas</p>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'white', marginTop: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                        <span style={{ color: '#f87171' }}>R$</span>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>Despesas</p>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span style={{ color: '#f87171', fontSize: '1.25rem' }}>R$</span>
                         {summary.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </h2>
                 </div>
 
                 {/* Balance */}
-                <div style={{ ...glassStyle, padding: '1.5rem', position: 'relative', overflow: 'hidden', border: summary.balance >= 0 ? '1px solid rgba(34, 211, 238, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)' }}>
-                    <div style={{ position: 'absolute', top: 0, right: 0, padding: '1rem', opacity: 0.1 }}>
-                        <Wallet size={100} style={{ color: summary.balance >= 0 ? '#22d3ee' : '#ef4444' }} />
+                <div style={{ ...glassStyle, padding: 'var(--panel-padding)', position: 'relative', overflow: 'hidden', border: summary.balance >= 0 ? '1px solid rgba(34, 211, 238, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.05 }}>
+                        <Wallet size={120} style={{ color: summary.balance >= 0 ? '#22d3ee' : '#ef4444' }} />
                     </div>
-                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Saldo Líquido</p>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 700, marginTop: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '4px', color: summary.balance >= 0 ? '#22d3ee' : '#f87171' }}>
-                        <span>R$</span>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>Saldo Líquido</p>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'baseline', gap: '4px', color: summary.balance >= 0 ? '#22d3ee' : '#f87171' }}>
+                        <span style={{ fontSize: '1.25rem' }}>R$</span>
                         {summary.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </h2>
                 </div>
             </div>
 
             {/* Financial Charts */}
-            <div style={{ ...glassStyle, padding: '2rem', marginBottom: '2rem', minHeight: '400px' }}>
+            <div className="chart-container" style={{ ...glassStyle, padding: '2rem', marginBottom: '2rem', minHeight: '400px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                     <div>
                         <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', margin: 0 }}>Fluxo de Caixa</h3>
@@ -630,15 +660,16 @@ export default function FinancialPage() {
 
                                         {/* Amount Section */}
                                         <div style={{
-                                            padding: '1rem',
-                                            background: 'rgba(0,0,0,0.15)',
+                                            padding: '0.75rem 1rem',
+                                            background: 'rgba(0,0,0,0.2)',
                                             borderRadius: '12px',
                                             display: 'flex',
                                             justifyContent: 'space-between',
-                                            alignItems: 'center'
+                                            alignItems: 'center',
+                                            border: '1px solid rgba(255,255,255,0.03)'
                                         }}>
-                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 600 }}>Valor total</span>
-                                            <span style={{ fontSize: '1.25rem', fontWeight: 800, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
+                                            <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Valor</span>
+                                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: rec.type === 'INCOME' ? '#34d399' : '#f87171', fontFamily: 'monospace' }}>
                                                 {rec.type === 'INCOME' ? '+' : '-'} R$ {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
@@ -723,40 +754,45 @@ export default function FinancialPage() {
                 }}>
                     <div style={{
                         ...glassStyle,
-                        width: '100%', maxWidth: '400px', padding: '1.5rem', position: 'relative',
-                        background: 'rgba(20, 20, 20, 0.95)'
+                        width: '100%', maxWidth: '450px', padding: '1.75rem', position: 'relative',
+                        background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)',
+                        maxHeight: '90vh', overflowY: 'auto'
                     }}>
-                        <button onClick={() => setModalOpen(false)} style={{ position: 'absolute', right: '1rem', top: '1rem', background: 'transparent', border: 'none', color: 'gray', cursor: 'pointer' }}>
-                            <X size={20} />
+                        <button onClick={() => setModalOpen(false)} style={{ position: 'absolute', right: '1.25rem', top: '1.25rem', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'gray', cursor: 'pointer', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <X size={18} />
                         </button>
 
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '1.5rem' }}>
+                        <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'white', marginBottom: '1.5rem', background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             {editingId ? "Editar Movimentação" : "Nova Movimentação"}
                         </h2>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {/* Tipo */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <label style={{
-                                    cursor: 'pointer', border: newTransaction.type === 'INCOME' ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(255,255,255,0.1)',
-                                    background: newTransaction.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                                    padding: '0.75rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                                    color: newTransaction.type === 'INCOME' ? '#34d399' : '#6b7280'
-                                }}>
-                                    <input type="radio" name="type" className="hidden" onClick={() => setNewTransaction({ ...newTransaction, type: 'INCOME' })} style={{ display: 'none' }} />
-                                    <ArrowUpCircle size={24} />
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>Receita Extra</span>
-                                </label>
-                                <label style={{
-                                    cursor: 'pointer', border: newTransaction.type === 'EXPENSE' ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255,255,255,0.1)',
-                                    background: newTransaction.type === 'EXPENSE' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                                    padding: '0.75rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                                    color: newTransaction.type === 'EXPENSE' ? '#f87171' : '#6b7280'
-                                }}>
-                                    <input type="radio" name="type" className="hidden" onClick={() => setNewTransaction({ ...newTransaction, type: 'EXPENSE' })} style={{ display: 'none' }} />
-                                    <ArrowDownCircle size={24} />
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>Despesa</span>
-                                </label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            {/* Tipo Toggle */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '12px' }}>
+                                <button 
+                                    onClick={() => setNewTransaction({ ...newTransaction, type: 'INCOME' })}
+                                    style={{
+                                        padding: '0.75rem', borderRadius: '10px', border: 'none',
+                                        background: newTransaction.type === 'INCOME' ? '#059669' : 'transparent',
+                                        color: newTransaction.type === 'INCOME' ? 'white' : '#6b7280',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.2s', cursor: 'pointer'
+                                    }}
+                                >
+                                    <ArrowUpCircle size={18} /> Receita
+                                </button>
+                                <button 
+                                    onClick={() => setNewTransaction({ ...newTransaction, type: 'EXPENSE' })}
+                                    style={{
+                                        padding: '0.75rem', borderRadius: '10px', border: 'none',
+                                        background: newTransaction.type === 'EXPENSE' ? '#dc2626' : 'transparent',
+                                        color: newTransaction.type === 'EXPENSE' ? 'white' : '#6b7280',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.2s', cursor: 'pointer'
+                                    }}
+                                >
+                                    <ArrowDownCircle size={18} /> Despesa
+                                </button>
                             </div>
 
                             <div>
@@ -764,7 +800,7 @@ export default function FinancialPage() {
                                 <input
                                     type="text"
                                     placeholder="Ex: Conta de Luz, Aluguel..."
-                                    style={inputStyle}
+                                    style={{ ...inputStyle, padding: '14px' }}
                                     value={newTransaction.description}
                                     onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
                                 />
@@ -776,8 +812,9 @@ export default function FinancialPage() {
                                     <input
                                         type="number"
                                         step="0.01"
+                                        inputMode="decimal"
                                         placeholder="0.00"
-                                        style={{ ...inputStyle, fontFamily: 'monospace' }}
+                                        style={{ ...inputStyle, fontFamily: 'monospace', padding: '14px' }}
                                         value={newTransaction.amount}
                                         onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
                                     />
@@ -786,7 +823,7 @@ export default function FinancialPage() {
                                     <label style={labelStyle}>Data</label>
                                     <input
                                         type="date"
-                                        style={inputStyle}
+                                        style={{ ...inputStyle, padding: '14px' }}
                                         value={newTransaction.date}
                                         onChange={(e) => setNewTransaction({ ...newTransaction, date: e.target.value })}
                                     />
@@ -796,34 +833,31 @@ export default function FinancialPage() {
                             <div>
                                 <label style={labelStyle}>Categoria</label>
                                 <select
-                                    style={{ ...inputStyle, cursor: 'pointer' }}
+                                    style={{ ...inputStyle, cursor: 'pointer', padding: '14px' }}
                                     value={newTransaction.category}
                                     onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
                                 >
-                                    <option style={{ background: '#111827' }}>Operacional</option>
-                                    <option style={{ background: '#111827' }}>Marketing</option>
-                                    <option style={{ background: '#111827' }}>Aluguel</option>
-                                    <option style={{ background: '#111827' }}>Salários</option>
-                                    <option style={{ background: '#111827' }}>Impostos</option>
-                                    <option style={{ background: '#111827' }}>Aporte</option>
-                                    <option style={{ background: '#111827' }}>Outros</option>
+                                    <option value="Operacional">Operacional</option>
+                                    <option value="Pessoal">Pessoal</option>
+                                    <option value="Vendas">Vendas</option>
+                                    <option value="Materais">Materiais</option>
+                                    <option value="Outros">Outros</option>
                                 </select>
                             </div>
 
-                            <Button
+                            <Button 
                                 onClick={handleSaveTransaction}
                                 disabled={saving}
-                                style={{
-                                    width: '100%',
-                                    marginTop: '1rem',
-                                    background: '#059669',
-                                    color: 'white',
-                                    fontWeight: 'bold',
-                                    padding: '12px',
-                                    borderRadius: '8px'
+                                style={{ 
+                                    marginTop: '0.5rem', 
+                                    height: '52px', 
+                                    background: newTransaction.type === 'INCOME' ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #ef4444, #dc2626)',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '1rem'
                                 }}
                             >
-                                {saving ? "Salvando..." : (editingId ? "Atualizar Lançamento" : "Confirmar Lançamento")}
+                                {saving ? <Loader2 className="animate-spin" /> : (editingId ? "Atualizar Registro" : "Salvar Lançamento")}
                             </Button>
                         </div>
                     </div>

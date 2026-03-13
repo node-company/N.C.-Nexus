@@ -125,9 +125,21 @@ export function ServiceForm({ initialData, isEdit = false }: ServiceFormProps) {
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.5s ease', padding: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            animation: 'fadeIn 0.5s ease',
+            padding: '1rem',
+            // @ts-ignore
+            '--panel-padding': '2rem'
+        }}>
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    form { --panel-padding: 1.25rem !important; }
+                }
+            `}</style>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Link href="/dashboard/services">
                         <Button variant="ghost" size="sm" type="button" style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -135,7 +147,7 @@ export function ServiceForm({ initialData, isEdit = false }: ServiceFormProps) {
                         </Button>
                     </Link>
                     <div>
-                        <h1 style={{ fontSize: '1.875rem', fontWeight: 700, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                        <h1 className="responsive-title" style={{ fontWeight: 700, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                             {isEdit ? "Editar Serviço" : "Novo Serviço"}
                         </h1>
                         <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.25rem' }}>
@@ -143,20 +155,20 @@ export function ServiceForm({ initialData, isEdit = false }: ServiceFormProps) {
                         </p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <Link href="/dashboard/services">
+                <div style={{ display: 'flex', gap: '0.75rem', width: '100%', maxWidth: '300px', flex: '1 1 auto', justifyContent: 'flex-end' }}>
+                    <Link href="/dashboard/services" className="mobile-hidden">
                         <Button variant="ghost" type="button" style={{ color: '#9ca3af' }}>Cancelar</Button>
                     </Link>
-                    <Button type="submit" disabled={loading} style={{ minWidth: '140px', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))' }}>
+                    <Button type="submit" disabled={loading} style={{ flex: 1, minWidth: '140px', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))', height: '48px' }}>
                         {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18} style={{ marginRight: '0.5rem' }} /> Salvar</>}
                     </Button>
                 </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '2rem', flexDirection: 'row', flexWrap: 'wrap' }}>
-                {/* Left Column: Main Info */}
+            <div style={{ display: 'flex', gap: '1.5rem', flexDirection: 'column' }}>
+                {/* Main Column */}
                 <div style={{ flex: '2', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
                             <Briefcase size={18} style={{ color: 'var(--color-primary)' }} /> Informações Básicas
@@ -191,8 +203,36 @@ export function ServiceForm({ initialData, isEdit = false }: ServiceFormProps) {
                                 <FileText style={{ position: 'absolute', right: '1rem', top: '1rem', color: '#4b5563' }} size={18} />
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                {/* Right Column: Media & Visuals */}
+                <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {/* Image Upload Component */}
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
+                            <ImageIcon size={18} style={{ color: 'var(--color-secondary)' }} /> Mídia do Serviço
+                        </h3>
+
+                        <ImageUpload
+                            value={formData.image_url}
+                            onChange={(url) => {
+                                setFormData(prev => ({ ...prev, image_url: url }));
+                                if (url) setTempImages(prev => [...prev, url]);
+                            }}
+                            bucket="company-images"
+                        />
+
+                        <p style={{ fontSize: '0.8rem', color: '#6b7280', textAlign: 'center' }}>
+                            Adicione uma foto chamativa para representar este serviço no catálogo.
+                        </p>
+                    </div>
+
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
+                            <Tag size={18} style={{ color: '#10b981' }} /> Detalhes
+                        </h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.5rem' }}>
                             <div>
                                 <label style={labelStyle}>Preço do Serviço</label>
                                 <div style={{ position: 'relative' }}>
@@ -230,29 +270,6 @@ export function ServiceForm({ initialData, isEdit = false }: ServiceFormProps) {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                {/* Right Column: Media & Visuals */}
-                <div style={{ flex: '1', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    {/* Image Upload Component */}
-                    <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
-                            <ImageIcon size={18} style={{ color: 'var(--color-secondary)' }} /> Mídia do Serviço
-                        </h3>
-
-                        <ImageUpload
-                            value={formData.image_url}
-                            onChange={(url) => {
-                                setFormData(prev => ({ ...prev, image_url: url }));
-                                if (url) setTempImages(prev => [...prev, url]);
-                            }}
-                            bucket="company-images"
-                        />
-
-                        <p style={{ fontSize: '0.8rem', color: '#6b7280', textAlign: 'center' }}>
-                            Adicione uma foto chamativa para representar este serviço no catálogo.
-                        </p>
                     </div>
                 </div>
             </div>

@@ -178,12 +178,28 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
     );
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '4rem', animation: 'fadeIn 0.5s ease' }}>
-            <div style={{ marginBottom: '2rem' }}>
-                <Link href="/dashboard/employees" style={{ display: 'inline-flex', alignItems: 'center', color: '#9ca3af', marginBottom: '1rem', textDecoration: 'none', fontSize: '0.9rem' }}>
+        <div style={{ 
+            maxWidth: '800px', 
+            margin: '0 auto', 
+            paddingBottom: '5rem', 
+            animation: 'fadeIn 0.5s ease',
+            padding: '1rem',
+            // @ts-ignore
+            '--panel-padding': '2rem'
+        }}>
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    div { --panel-padding: 1.25rem !important; }
+                    .mobile-column { grid-template-columns: 1fr !important; gap: 1rem !important; }
+                    .mobile-full-width { width: 100% !important; }
+                }
+            `}</style>
+
+            <div style={{ marginBottom: '2.5rem' }}>
+                <Link href="/dashboard/employees" style={{ display: 'inline-flex', alignItems: 'center', color: '#9ca3af', marginBottom: '1.25rem', textDecoration: 'none', fontSize: '0.9rem', transition: 'color 0.2s' }} onMouseOver={(e) => e.currentTarget.style.color = 'white'} onMouseOut={(e) => e.currentTarget.style.color = '#9ca3af'}>
                     <ArrowLeft size={16} style={{ marginRight: '0.5rem' }} /> Voltar para lista
                 </Link>
-                <h1 style={{ fontSize: '2rem', fontWeight: 800, color: 'white', margin: 0 }}>Editar Funcionário</h1>
+                <h1 className="responsive-title" style={{ fontWeight: 800, color: 'white', margin: 0 }}>Editar Funcionário</h1>
             </div>
 
             {errorMessage && (
@@ -219,7 +235,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                <div className="mobile-column" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                     <div>
                         <label style={labelStyle}><Mail size={14} style={{ display: 'inline', marginRight: '4px' }} /> Email de Acesso *</label>
                         <input
@@ -237,6 +253,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                         <input
                             type="text"
                             name="phone"
+                            inputMode="tel"
                             value={formData.phone}
                             onChange={handleChange}
                             style={inputStyle}
@@ -252,7 +269,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     <Briefcase size={20} style={{ color: 'var(--color-primary)' }} /> Dados Contratuais
                 </h3>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                <div className="mobile-column" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                     <div>
                         <label style={labelStyle}>Cargo *</label>
                         <input
@@ -270,6 +287,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                         <input
                             type="number"
                             name="salary"
+                            inputMode="decimal"
                             value={formData.salary}
                             onChange={handleChange}
                             style={inputStyle}
@@ -284,6 +302,7 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     <input
                         type="number"
                         name="commission_percentage"
+                        inputMode="decimal"
                         value={formData.commission_percentage}
                         onChange={handleChange}
                         style={inputStyle}
@@ -301,15 +320,15 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     <Lock size={20} style={{ color: 'var(--color-primary)' }} /> Permissões de Acesso
                 </h3>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div className="mobile-column" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                     <label style={checkboxStyle}>
                         <input
                             type="checkbox"
                             checked={permissions.can_sell}
                             onChange={() => togglePermission('can_sell')}
-                            style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-primary)' }}
                         />
-                        <span style={{ color: 'white', fontSize: '0.95rem' }}>Realizar Vendas (PDV)</span>
+                        <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: 500 }}>Realizar Vendas (PDV)</span>
                     </label>
 
                     <label style={checkboxStyle}>
@@ -317,9 +336,9 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                             type="checkbox"
                             checked={permissions.can_manage_products}
                             onChange={() => togglePermission('can_manage_products')}
-                            style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-primary)' }}
                         />
-                        <span style={{ color: 'white', fontSize: '0.95rem' }}>Gerenciar Produtos/Estoque</span>
+                        <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: 500 }}>Gerenciar Produtos/Estoque</span>
                     </label>
 
                     <label style={checkboxStyle}>
@@ -327,9 +346,9 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                             type="checkbox"
                             checked={permissions.can_view_reports}
                             onChange={() => togglePermission('can_view_reports')}
-                            style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-primary)' }}
                         />
-                        <span style={{ color: 'white', fontSize: '0.95rem' }}>Visualizar Relatórios</span>
+                        <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: 500 }}>Visualizar Relatórios</span>
                     </label>
 
                     <label style={checkboxStyle}>
@@ -337,9 +356,9 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                             type="checkbox"
                             checked={permissions.can_manage_settings}
                             onChange={() => togglePermission('can_manage_settings')}
-                            style={{ width: '18px', height: '18px', accentColor: 'var(--color-primary)' }}
+                            style={{ width: '20px', height: '20px', accentColor: 'var(--color-primary)' }}
                         />
-                        <span style={{ color: 'white', fontSize: '0.95rem' }}>Gerenciar Configurações</span>
+                        <span style={{ color: 'white', fontSize: '0.95rem', fontWeight: 500 }}>Gerenciar Configurações</span>
                     </label>
                 </div>
 
@@ -350,11 +369,15 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, active: true }))}
                             style={{
-                                padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid',
+                                flex: 1,
+                                height: '48px',
+                                padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid',
                                 borderColor: formData.active ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)',
-                                background: formData.active ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                                color: formData.active ? 'var(--color-primary)' : 'gray',
-                                cursor: 'pointer'
+                                background: formData.active ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.02)',
+                                color: formData.active ? 'var(--color-primary)' : '#6b7280',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
                             }}
                         >
                             Ativo
@@ -363,11 +386,15 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, active: false }))}
                             style={{
-                                padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid',
+                                flex: 1,
+                                height: '48px',
+                                padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid',
                                 borderColor: !formData.active ? '#ef4444' : 'rgba(255,255,255,0.1)',
-                                background: !formData.active ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                                color: !formData.active ? '#ef4444' : 'gray',
-                                cursor: 'pointer'
+                                background: !formData.active ? 'rgba(239, 68, 68, 0.1)' : 'rgba(255,255,255,0.02)',
+                                color: !formData.active ? '#ef4444' : '#6b7280',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
                             }}
                         >
                             Inativo
@@ -375,20 +402,26 @@ export default function EditEmployeePage({ params }: { params: { id: string } })
                     </div>
                 </div>
 
-                <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'flex-end' }}>
                     <Button
                         type="submit"
                         disabled={saving}
+                        className="mobile-full-width"
                         style={{
                             background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
                             border: 'none',
                             padding: '12px 32px',
+                            height: '52px',
                             fontSize: '1rem',
-                            fontWeight: 600,
+                            fontWeight: 700,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.5rem',
-                            opacity: saving ? 0.7 : 1
+                            justifyContent: 'center',
+                            gap: '0.75rem',
+                            borderRadius: '12px',
+                            boxShadow: '0 4px 14px 0 rgba(0,0,0,0.3)',
+                            opacity: saving ? 0.7 : 1,
+                            transition: 'transform 0.2s ease'
                         }}
                     >
                         {saving ? "Salvando..." : <><Save size={20} /> Salvar Alterações</>}
