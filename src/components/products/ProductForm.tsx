@@ -152,15 +152,21 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Usuário não autenticado");
 
-            // Validação básica
-            if (isNaN(formData.price) || formData.price < 0) throw new Error("Preço inválido");
-            if (isNaN(formData.cost_price!) || (formData.cost_price || 0) < 0) throw new Error("Custo inválido");
+            // Validação rigorosa
+            if (!formData.name.trim()) throw new Error("O nome do produto é obrigatório");
+            
+            const finalPrice = Number(formData.price);
+            const finalCost = Number(formData.cost_price);
+
+            if (isNaN(finalPrice) || finalPrice < 0) throw new Error("Preço de venda inválido");
+            if (isNaN(finalCost) || finalCost < 0) throw new Error("Preço de custo inválido");
 
             // 1. Salva/Atualiza Produto Pai
             const productData = {
                 ...formData,
-                price: formData.price || 0,
-                cost_price: formData.cost_price || 0,
+                name: formData.name.trim(),
+                price: finalPrice,
+                cost_price: finalCost,
                 user_id: user.id,
                 stock_quantity: totalStock,
             };
@@ -190,7 +196,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
             // Buscar variantes existentes no banco para comparar
             const { data: existingVariants } = await supabase
                 .from("product_variants")
-                .select("id")
+                .select("id, stock_quantity")
                 .eq("product_id", productId);
 
             const existingIds = existingVariants?.map(v => v.id) || [];
@@ -206,11 +212,9 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
                 if (deleteError) {
                     console.error("Erro ao deletar variantes antigas (provavelmente já movimentadas):", deleteError);
-                    // Opcional: Avisar usuario ou ignorar se for constraint. 
-                    // Se falhar, elas continuam lá. Ideal seria soft-delete ou bloquear.
-                    // Vamos lançar apenas se não for violação de FK, ou lançar warning.
-                    // Por enquanto, throw para ver o erro se for grave, ou alert.
-                    // throw deleteError; 
+                    // Se falhar por constraint de histórico, vamos apenas logar e permitir o fluxo continuar 
+                    // (as variantes órfãs ficarão no banco mas não aparecerão no form).
+                    // Idealmente o ON DELETE CASCADE resolverá isso após o script SQL ser aplicado.
                 }
             }
 
@@ -234,6 +238,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
             }
 
             // B2. Inserts
+            const insertedVariants = [];
             if (variantsToInsert.length > 0) {
                 const toInsert = variantsToInsert.map(v => ({
                     product_id: productId,
@@ -241,10 +246,70 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                     size: v.size,
                     stock_quantity: v.stock_quantity
                 }));
-                const { error: insertError } = await supabase
+                const { data: insertedData, error: insertError } = await supabase
                     .from("product_variants")
-                    .insert(toInsert);
+                    .insert(toInsert)
+                    .select();
                 if (insertError) throw insertError;
+                if (insertedData) insertedVariants.push(...insertedData);
+            }
+
+            // --- STOCK MOVEMENT LOGGING ---
+            
+            // 1. Log New Variants with initial stock
+            if (!isEdit) {
+                // Ao criar produto novo, logamos todas as variantes que começam com estoque
+                const logs = variants.filter(v => v.stock_quantity > 0).map(v => {
+                    // Encontrar o ID gerado para essa variante (baseado no tamanho)
+                    const matched = insertedVariants.find(iv => iv.size === v.size);
+                    return {
+                        user_id: user.id,
+                        product_id: productId,
+                        variant_id: matched?.id || null,
+                        type: 'IN',
+                        quantity: v.stock_quantity,
+                        reason: "Estoque Inicial (Cadastro)"
+                    };
+                });
+                if (logs.length > 0) {
+                    await supabase.from("inventory_movements").insert(logs);
+                }
+            } else {
+                // Ao editar, comparamos quem mudou (Apenas para variantes existentes que foram editadas)
+                // Nota: Inserções de novas variantes em produto editado também devem ser logadas
+                const logs = [];
+
+                // Logs para novas variantes adicionadas durante a edição
+                insertedVariants.filter(iv => iv.stock_quantity > 0).forEach(iv => {
+                    logs.push({
+                        user_id: user.id,
+                        product_id: productId,
+                        variant_id: iv.id,
+                        type: 'IN',
+                        quantity: iv.stock_quantity,
+                        reason: "Estoque Inicial (Nova Variante)"
+                    });
+                });
+
+                // Logs para variantes existentes que tiveram alteração na quantidade
+                for (const v of variantsToUpdate) {
+                    const original = existingVariants?.find(ev => ev.id === v.id);
+                    if (original && original.stock_quantity !== v.stock_quantity) {
+                        const diff = v.stock_quantity - original.stock_quantity;
+                        logs.push({
+                            user_id: user.id,
+                            product_id: productId,
+                            variant_id: v.id,
+                            type: diff > 0 ? 'IN' : 'OUT',
+                            quantity: Math.abs(diff),
+                            reason: "Ajuste via Formulário de Produto"
+                        });
+                    }
+                }
+
+                if (logs.length > 0) {
+                    await supabase.from("inventory_movements").insert(logs);
+                }
             }
 
             // 3. Integração Financeira (Estoque Inicial)

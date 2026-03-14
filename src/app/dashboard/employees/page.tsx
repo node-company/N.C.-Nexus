@@ -131,7 +131,7 @@ export default function EmployeesPage() {
                 @media (min-width: 769px) {
                     .desktop-table-view { display: block !important; }
                     .mobile-card-view { display: none !important; }
-                    .mobile-fab { display: none !important; }
+                    :global(.mobile-fab) { display: none !important; }
                     .search-container { max-width: 500px !important; }
                 }
             `}</style>

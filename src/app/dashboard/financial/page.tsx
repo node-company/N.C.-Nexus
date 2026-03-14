@@ -113,6 +113,20 @@ export default function FinancialPage() {
     }, [startDate, endDate]);
 
     const fetchFinancials = async () => {
+        // Validate dates before processing to prevent freezes during typing
+        if (!startDate || !endDate || startDate.length < 10 || endDate.length < 10) return;
+        
+        const s = parseISO(startDate);
+        const e = parseISO(endDate);
+        
+        if (isNaN(s.getTime()) || isNaN(e.getTime())) return;
+        if (s.getFullYear() < 2000 || e.getFullYear() < 2000) return;
+        if (s > e) return;
+
+        // Limit range to 2 years to prevent memory/performance issues
+        const dayDiff = (e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24);
+        if (dayDiff > 730) return;
+
         setLoading(true);
         try {
             const { data: { user } } = await supabase.auth.getUser();
@@ -181,25 +195,34 @@ export default function FinancialPage() {
                 balance: revenue - expenses
             });
 
-            // Generate Chart Data
+            // Generate Chart Data - Optimized O(N) approach
             const days = eachDayOfInterval({
                 start: parseISO(startDate),
                 end: parseISO(endDate)
             });
 
+            // Pre-calculate totals per day
+            const totalsByDay: Record<string, { income: number, expense: number }> = {};
+            allRecords.forEach(rec => {
+                const dayStr = rec.date.split('T')[0];
+                if (!totalsByDay[dayStr]) {
+                    totalsByDay[dayStr] = { income: 0, expense: 0 };
+                }
+                if (rec.type === 'INCOME') {
+                    totalsByDay[dayStr].income += rec.amount;
+                } else {
+                    totalsByDay[dayStr].expense += rec.amount;
+                }
+            });
+
             const dailyData: ChartDataPoint[] = days.map(day => {
                 const dayStr = format(day, "yyyy-MM-dd");
-                const dayIncome = allRecords
-                    .filter(r => r.type === 'INCOME' && r.date.startsWith(dayStr))
-                    .reduce((acc, curr) => acc + curr.amount, 0);
-                const dayExpense = allRecords
-                    .filter(r => r.type === 'EXPENSE' && r.date.startsWith(dayStr))
-                    .reduce((acc, curr) => acc + curr.amount, 0);
+                const dayTotals = totalsByDay[dayStr] || { income: 0, expense: 0 };
 
                 return {
                     name: format(day, "dd/MM"),
-                    income: dayIncome,
-                    expense: dayExpense
+                    income: dayTotals.income,
+                    expense: dayTotals.expense
                 };
             });
 
@@ -833,15 +856,15 @@ export default function FinancialPage() {
                             <div>
                                 <label style={labelStyle}>Categoria</label>
                                 <select
-                                    style={{ ...inputStyle, cursor: 'pointer', padding: '14px' }}
+                                    style={{ ...inputStyle, cursor: 'pointer', padding: '14px', color: 'white' }}
                                     value={newTransaction.category}
                                     onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
                                 >
-                                    <option value="Operacional">Operacional</option>
-                                    <option value="Pessoal">Pessoal</option>
-                                    <option value="Vendas">Vendas</option>
-                                    <option value="Materais">Materiais</option>
-                                    <option value="Outros">Outros</option>
+                                    <option value="Operacional" style={{ background: '#0f172a', color: 'white' }}>Operacional</option>
+                                    <option value="Pessoal" style={{ background: '#0f172a', color: 'white' }}>Pessoal</option>
+                                    <option value="Vendas" style={{ background: '#0f172a', color: 'white' }}>Vendas</option>
+                                    <option value="Materais" style={{ background: '#0f172a', color: 'white' }}>Materiais</option>
+                                    <option value="Outros" style={{ background: '#0f172a', color: 'white' }}>Outros</option>
                                 </select>
                             </div>
 

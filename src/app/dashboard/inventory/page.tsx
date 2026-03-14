@@ -38,6 +38,7 @@ export default function InventoryPage() {
     const [logs, setLogs] = useState<InventoryLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const [logFilter, setLogFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
     const { can_manage_products } = usePermissions();
 
     // Modal State
@@ -83,7 +84,7 @@ export default function InventoryPage() {
                 variant:product_variants(size)
             `)
             .order("created_at", { ascending: false })
-            .limit(10);
+            .limit(50);
 
         if (data) setLogs(data as any);
     }
@@ -399,7 +400,33 @@ export default function InventoryPage() {
                     </h3>
 
                     <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                        {logs.map((log) => (
+                        {/* Filters */}
+                        <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            {(['ALL', 'IN', 'OUT'] as const).map((filter) => (
+                                <button
+                                    key={filter}
+                                    onClick={() => setLogFilter(filter)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '1rem',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        borderBottom: logFilter === filter ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                        color: logFilter === filter ? 'white' : '#6b7280',
+                                        fontSize: '0.85rem',
+                                        fontWeight: logFilter === filter ? 700 : 500,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {filter === 'ALL' ? 'Tudo' : filter === 'IN' ? 'Entradas' : 'Saídas'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {logs
+                            .filter(log => logFilter === 'ALL' || log.type === logFilter)
+                            .map((log) => (
                             <div key={log.id} style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
                                 <div style={{
                                     padding: '0.5rem', borderRadius: '50%', flexShrink: 0,

@@ -63,6 +63,8 @@ export default function SalesPDVPage() {
     const [pendingTab, setPendingTab] = useState<'FIADO' | 'CATALOG' | 'QUOTES'>('FIADO');
     const [pendingAction, setPendingAction] = useState<{ type: 'EDIT' | 'DELETE' | 'CONVERT', sale: any } | null>(null);
     const [editingSaleId, setEditingSaleId] = useState<string | null>(null);
+    const [showSuccessIndicator, setShowSuccessIndicator] = useState(false);
+    const [lastCompletedSale, setLastCompletedSale] = useState<any>(null);
 
     // Data States
     const [catalog, setCatalog] = useState<CatalogItem[]>([]);
@@ -435,12 +437,14 @@ export default function SalesPDVPage() {
                     }
                 }
             }
-
             const successMsg = editingSaleId
                 ? (targetStatus === 'quote' ? "Orçamento atualizado!" : "Venda atualizada!")
                 : (targetStatus === 'quote' ? "Orçamento salvo!" : "Venda realizada!");
+            
+            // Capture for success display
+            setLastCompletedSale({ ...sale, _displayMsg: successMsg });
+            setShowSuccessIndicator(true);
 
-            alert(successMsg);
             setCart([]);
             setDiscountValue(0); // Reset discount
             setSelectedClient("");
@@ -554,7 +558,7 @@ export default function SalesPDVPage() {
 
             if (error) throw error;
             fetchHistory();
-            alert(isCompleted ? "Venda concluída!" : "Parcela marcada como paga!");
+            setNotification(isCompleted ? "Venda concluída!" : `Parcela ${newPaid} marcada como paga!`);
         } catch (error) {
             console.error(error);
             alert("Erro ao atualizar parcelas.");
@@ -1103,12 +1107,27 @@ export default function SalesPDVPage() {
                                                     )}
                                                 </td>
                                                 <td className="responsive-table-cell">
-                                                    <span style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', color: '#d1d5db' }}>
-                                                        {sale.payment_method}
-                                                    </span>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                        <span style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', color: '#d1d5db', width: 'fit-content' }}>
+                                                            {sale.payment_method}
+                                                        </span>
+                                                        {sale.payment_method === 'FIADO' && (
+                                                            <div style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                                                <span style={{ color: '#fbbf24' }}>Pagas: {sale.paid_installments}/{sale.installments}</span>
+                                                                <span style={{ color: '#9ca3af', marginLeft: '8px' }}>Faltam: {sale.installments - sale.paid_installments}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </td>
-                                                <td className="responsive-table-cell" style={{ textAlign: 'right', color: '#34d399', fontWeight: 700 }}>
-                                                    R$ {sale.total_amount.toFixed(2)}
+                                                <td className="responsive-table-cell" style={{ textAlign: 'right' }}>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                                        <span style={{ color: '#34d399', fontWeight: 700 }}>R$ {sale.total_amount.toFixed(2)}</span>
+                                                        {sale.payment_method === 'FIADO' && sale.status === 'pending' && (
+                                                            <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 600 }}>
+                                                                Restante: R$ {(sale.total_amount - (sale.total_amount / sale.installments * sale.paid_installments)).toFixed(2)}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ textAlign: 'right' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -1251,7 +1270,10 @@ export default function SalesPDVPage() {
                                                 <div style={{ color: '#d1d5db', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                     <div style={{ padding: '2px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>{sale.payment_method || 'N/A'}</div>
                                                     {sale.payment_method === 'FIADO' && (
-                                                        <div style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: 700 }}>{sale.paid_installments}/{sale.installments}</div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                            <div style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: 800 }}>{sale.paid_installments}/{sale.installments} parcelas</div>
+                                                            <div style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: 700 }}>Faltam R$ {(sale.total_amount - (sale.total_amount / sale.installments * sale.paid_installments)).toFixed(2)}</div>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -1391,6 +1413,100 @@ export default function SalesPDVPage() {
                     {notification}
                 </div>
             )}
+            {/* Premium Sale Success Indicator Overlay */}
+            {showSuccessIndicator && lastCompletedSale && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 1500,
+                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '1.5rem', animation: 'fadeIn 0.4s ease-out'
+                }}>
+                    <div style={{
+                        ...glassStyle,
+                        maxWidth: '400px', width: '100%', padding: '2.5rem',
+                        background: 'rgba(20, 20, 25, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', textAlign: 'center',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        animation: 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                    }}>
+                        <div style={{
+                            width: '80px', height: '80px', borderRadius: '50%', 
+                            background: 'rgba(16, 185, 129, 0.1)', border: '2px solid rgba(16, 185, 129, 0.2)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            marginBottom: '1.5rem', color: '#10b981',
+                            animation: 'bounceIn 0.6s ease-out'
+                        }}>
+                            <CheckCircle size={40} />
+                        </div>
+
+                        <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem' }}>
+                            {lastCompletedSale._displayMsg}
+                        </h2>
+                        <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>
+                            {lastCompletedSale.customer_name ? `Cliente: ${lastCompletedSale.customer_name}` : 
+                             (lastCompletedSale.client_id ? 'Cliente registrado no sistema' : 'Venda rápida realizada')}
+                        </p>
+
+                        <div style={{ 
+                            width: '100%', background: 'rgba(255,255,255,0.03)', 
+                            padding: '1rem', borderRadius: '12px', marginBottom: '2rem',
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        }}>
+                            <span style={{ color: '#d1d5db', fontWeight: 600 }}>Total:</span>
+                            <span style={{ color: '#34d399', fontSize: '1.25rem', fontWeight: 800 }}>
+                                R$ {lastCompletedSale.total_amount?.toFixed(2)}
+                            </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                            <Button
+                                onClick={() => {
+                                    setSelectedSaleForReceipt(lastCompletedSale);
+                                    setReceiptModalOpen(true);
+                                }}
+                                style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', height: '48px', fontWeight: 700 }}
+                            >
+                                <Printer size={18} style={{ marginRight: '8px' }} /> Ver Recibo
+                            </Button>
+                            <Button
+                                onClick={() => {
+                                    setShowSuccessIndicator(false);
+                                    setLastCompletedSale(null);
+                                    setSearchTerm("");
+                                    fetchData();
+                                }}
+                                style={{ background: 'var(--color-primary)', height: '48px', fontWeight: 700 }}
+                            >
+                                <Plus size={18} style={{ marginRight: '8px' }} /> Novo Pedido
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes scaleIn {
+                    from { transform: scale(0.9); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                @keyframes bounceIn {
+                    0% { transform: scale(0.3); opacity: 0; }
+                    50% { transform: scale(1.05); opacity: 1; }
+                    70% { transform: scale(0.9); }
+                    100% { transform: scale(1); }
+                }
+                @keyframes slideUp {
+                    from { transform: translate(-50%, 100%); opacity: 0; }
+                    to { transform: translate(-50%, 0); opacity: 1; }
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 }
