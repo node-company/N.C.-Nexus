@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
-import { Plus, Edit, Trash2, Search, User, Phone, MapPin, Briefcase, Mail } from "lucide-react";
+import { Plus, Edit, Trash2, Search, User, Phone, MapPin, Briefcase, Mail, X, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -22,6 +22,12 @@ export default function EmployeesPage() {
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    
+    // Deletion Modal State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const supabase = createClient();
     const router = useRouter();
     const { can_manage_settings, loading: permissionsLoading } = usePermissions();
@@ -55,6 +61,7 @@ export default function EmployeesPage() {
             const { data, error } = await supabase
                 .from("employees")
                 .select("*")
+                .eq("active", true)
                 .order("created_at", { ascending: false });
 
             if (data) setEmployees(data);
@@ -65,16 +72,27 @@ export default function EmployeesPage() {
         }
     }
 
-    async function handleDelete(id: string) {
-        if (!confirm("Tem certeza que deseja excluir este funcionário?")) return;
+    async function handleDelete() {
+        if (!employeeToDelete) return;
+        setIsDeleting(true);
 
         try {
-            const { error } = await supabase.from("employees").delete().eq("id", id);
+            // Soft delete: update active to false
+            const { error } = await supabase
+                .from("employees")
+                .update({ active: false })
+                .eq("id", employeeToDelete.id);
+
             if (error) throw error;
-            setEmployees(employees.filter((e) => e.id !== id));
+            
+            setEmployees(employees.filter((e) => e.id !== employeeToDelete.id));
+            setShowDeleteModal(false);
+            setEmployeeToDelete(null);
         } catch (error) {
             console.error("Error deleting employee:", error);
             alert("Erro ao excluir funcionário");
+        } finally {
+            setIsDeleting(false);
         }
     }
 
@@ -285,7 +303,10 @@ export default function EmployeesPage() {
                                                         <Edit size={18} />
                                                     </Button>
                                                     <Button
-                                                        onClick={() => handleDelete(employee.id)}
+                                                        onClick={() => {
+                                                            setEmployeeToDelete(employee);
+                                                            setShowDeleteModal(true);
+                                                        }}
                                                         style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                         title="Excluir"
                                                     >
@@ -392,7 +413,10 @@ export default function EmployeesPage() {
                                             <Edit size={16} /> Editar
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(employee.id)}
+                                            onClick={() => {
+                                                setEmployeeToDelete(employee);
+                                                setShowDeleteModal(true);
+                                            }}
                                             style={{ 
                                                 flex: '1',
                                                 minWidth: '120px',
@@ -433,6 +457,81 @@ export default function EmployeesPage() {
                     )}
                 </div>
             )}
+
+            {/* Custom Premium Delete Modal */}
+            {showDeleteModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '1.5rem', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+                    animation: 'fadeIn 0.2s ease-out'
+                }} onClick={() => !isDeleting && setShowDeleteModal(false)}>
+                    <div style={{
+                        ...glassStyle,
+                        maxWidth: '450px', width: '100%', padding: '2rem',
+                        background: 'rgba(20, 20, 25, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', position: 'relative',
+                        animation: 'scaleIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1)'
+                    }} onClick={e => e.stopPropagation()}>
+                        
+                        <button 
+                            onClick={() => setShowDeleteModal(false)}
+                            style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer' }}
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div style={{
+                            width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', color: '#ef4444'
+                        }}>
+                            <Trash2 size={24} />
+                        </div>
+                        
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.75rem' }}>
+                            Excluir Funcionário?
+                        </h3>
+                        
+                        <p style={{ color: '#9ca3af', lineHeight: 1.5, marginBottom: '2rem' }}>
+                            Você está prestes a excluir o funcionário <strong style={{color: 'white'}}>"{employeeToDelete?.name}"</strong>. 
+                            Isso removerá o funcionário da listagem ativa, mas manterá todos os registros históricos seguros.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <Button
+                                disabled={isDeleting}
+                                onClick={() => setShowDeleteModal(false)}
+                                variant="ghost"
+                                style={{ flex: 1, border: '1px solid rgba(255,255,255,0.05)', color: '#9ca3af' }}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                disabled={isDeleting}
+                                onClick={handleDelete}
+                                style={{
+                                    flex: 1, 
+                                    background: '#ef4444',
+                                    border: 'none', color: 'white', fontWeight: 700,
+                                }}
+                            >
+                                {isDeleting ? <Loader2 className="animate-spin" size={20} /> : "Excluir Agora"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes scaleIn {
+                    from { transform: scale(0.95); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 }

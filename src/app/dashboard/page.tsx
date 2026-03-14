@@ -142,6 +142,7 @@ export default function DashboardPage() {
                     .from('clients')
                     .select('*', { count: 'exact', head: true })
                     .eq('user_id', user.id)
+                    .eq('active', true)
                     .gte('created_at', firstDayOfMonth);
 
                 // 3. Stock Items
