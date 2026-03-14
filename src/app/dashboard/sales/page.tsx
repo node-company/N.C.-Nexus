@@ -1415,20 +1415,33 @@ export default function SalesPDVPage() {
             )}
             {/* Premium Sale Success Indicator Overlay */}
             {showSuccessIndicator && lastCompletedSale && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 1500,
-                    background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '1.5rem', animation: 'fadeIn 0.4s ease-out'
-                }}>
-                    <div style={{
-                        ...glassStyle,
-                        maxWidth: '400px', width: '100%', padding: '2.5rem',
-                        background: 'rgba(20, 20, 25, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
-                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', textAlign: 'center',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center',
-                        animation: 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-                    }}>
+                <div 
+                    onClick={() => {
+                        setShowSuccessIndicator(false);
+                        setLastCompletedSale(null);
+                        setSearchTerm("");
+                        fetchData();
+                    }}
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 1500,
+                        background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '1.5rem', animation: 'fadeIn 0.4s ease-out',
+                        cursor: 'pointer'
+                    }}
+                >
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            ...glassStyle,
+                            maxWidth: '400px', width: '100%', padding: '2.5rem',
+                            background: 'rgba(20, 20, 25, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
+                            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', textAlign: 'center',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center',
+                            animation: 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            cursor: 'default'
+                        }}
+                    >
                         <div style={{
                             width: '80px', height: '80px', borderRadius: '50%', 
                             background: 'rgba(16, 185, 129, 0.1)', border: '2px solid rgba(16, 185, 129, 0.2)',
