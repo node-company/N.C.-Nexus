@@ -22,17 +22,19 @@ export async function POST(req: NextRequest) {
             const subscription = await stripe.subscriptions.create({
                 customer: customer.id,
                 items: [{ price: priceId }],
+                trial_period_days: 7, // Conforme o plano discutido e o texto na UI
                 payment_behavior: 'default_incomplete',
                 payment_settings: {
                     save_default_payment_method: 'on_subscription',
                     payment_method_types: ['card', 'boleto'],
                 },
-                expand: ['latest_invoice.payment_intent'],
+                expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
                 metadata: { planName: planName },
             });
 
+            // If there's a trial, we get a setup_intent instead of a payment_intent
             // @ts-ignore
-            clientSecret = subscription.latest_invoice?.payment_intent?.client_secret;
+            clientSecret = subscription.latest_invoice?.payment_intent?.client_secret || subscription.pending_setup_intent?.client_secret;
             resourceId = subscription.id;
 
         } else {

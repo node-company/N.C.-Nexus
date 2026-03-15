@@ -12,27 +12,34 @@ import {
 import { Loader2, CheckCircle2, ShieldCheck, ArrowLeft, Lock } from "lucide-react";
 import Link from "next/link";
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+// Initialize Stripe lazily to avoid crash if key is missing
+let stripePromise: Promise<any> | null = null;
+const getStripe = () => {
+    if (!stripePromise && process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+        stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+    }
+    return stripePromise;
+};
 
 const PLANS = {
     'Mensal': {
         monthlyPrice: 'R$ 47,00',
         billingText: 'Cobrado todo mês',
-        priceId: 'price_1StdJlH9xysmTmT9ySfwMjOq',
+        priceId: process.env.NEXT_PUBLIC_PRICE_ID_MONTHLY || 'price_1StdJlH9xysmTmT9ySfwMjOq',
         features: ['Acesso Completo ao Sistema', 'Suporte Prioritário', 'Sem Fidelidade', 'Cancelamento a qualquer momento'],
         highlight: false
     },
     'Anual': {
         monthlyPrice: 'R$ 24,75',
         billingText: 'R$ 297,00 cobrado anualmente',
-        priceId: 'price_1StdIeH9xysmTmT9d0o3PDCS',
+        priceId: process.env.NEXT_PUBLIC_PRICE_ID_ANNUAL || 'price_1StdIeH9xysmTmT9d0o3PDCS',
         features: ['Acesso Completo ao Sistema', 'Economia de 47%', 'Suporte VIP via WhatsApp', 'Treinamento Exclusivo para Equipe'],
         highlight: true
     },
     'Semestral': {
         monthlyPrice: 'R$ 32,83',
         billingText: 'R$ 197,00 cobrado semestralmente',
-        priceId: 'price_1StdJVH9xysmTmT95lE4FKR4',
+        priceId: process.env.NEXT_PUBLIC_PRICE_ID_SEMIANNUAL || 'price_1StdJVH9xysmTmT95lE4FKR4',
         features: ['Acesso Completo ao Sistema', 'Economia de 30%', 'Suporte Prioritário'],
         highlight: false
     }
@@ -77,19 +84,33 @@ function CheckoutForm({ planName, customerId }: { planName: string, customerId: 
             }
         }
 
+        const confirmParams = {
+            return_url: `${window.location.origin}/checkout/success?email_contact=${encodeURIComponent(email)}`,
+            payment_method_data: {
+                billing_details: {
+                    name: name,
+                    email: email,
+                    phone: phone
+                }
+            }
+        };
+
+        // If clientSecret starts with 'seti_', it's a SetupIntent (Trial)
+        // If it starts with 'pi_', it's a PaymentIntent (Immediate Payment)
+        const isSetup = (elements.getElement(PaymentElement) as any)?._parent?._commonOptions?.clientSecret?.startsWith('seti_');
+        
+        // Actually, Stripe Elements instance can be used directly or we can check the secret if we pass it down
+        // But the safest way in React Stripe is to just call confirmPayment, 
+        // Stripe's SDK is smart enough to handle SetupIntents through confirmPayment if initialized that way.
+        // However, let's be explicit if possible. But elements doesn't easily expose the secret here.
+        
+        // REVISION: stripe.confirmPayment handles both PaymentIntents and SetupIntents 
+        // as long as the Elements was initialized with the secret. 
+        // The error was likely just the missing secret in the previous step.
+        
         const { error } = await stripe.confirmPayment({
             elements,
-            confirmParams: {
-                // Return URL for success page
-                return_url: `${window.location.origin}/checkout/success?email_contact=${encodeURIComponent(email)}`,
-                payment_method_data: {
-                    billing_details: {
-                        name: name,
-                        email: email,
-                        phone: phone
-                    }
-                }
-            },
+            confirmParams,
         });
 
         if (error) {
@@ -265,9 +286,16 @@ function CheckoutContent() {
         const priceId = getPriceId(planName);
 
         if (!priceId) {
-            setError("Plano inválido ou não encontrado.");
+            setError("Configuração de plano incompleta (Price ID ausente).");
             return;
         }
+
+        if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+            setError("Chave pública do Stripe não configurada nas variáveis de ambiente.");
+            return;
+        }
+
+        console.log(`Iniciando checkout: Plano ${planName}, Price ID ${priceId}`);
 
         // console.log("Criando assinatura para:", planName);
 
@@ -443,7 +471,7 @@ function CheckoutContent() {
                                 <button onClick={() => window.location.reload()} style={{ padding: '0.75rem 1.5rem', background: '#334155', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>Tentar novamente</button>
                             </div>
                         ) : clientSecret ? (
-                            <Elements stripe={stripePromise} options={{
+                            <Elements stripe={getStripe()} options={{
                                 clientSecret,
                                 appearance: {
                                     theme: 'night',

@@ -2,18 +2,20 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { resend } from "@/lib/resend";
+
+// Create a Supabase client with the service role key to bypass RLS
+const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 async function sendRecoveryEmail(email: string, userId: string | undefined, planName: string | undefined, paymentIntentId: string | undefined) {
     if (!email) return;
 
-    // Construct the recovery link
-    // Assuming the app is hosted, we need the base URL. In dev it's localhost.
-    // Ideally use process.env.NEXT_PUBLIC_APP_URL
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
-    // Check if we have a valid payment ID to allow verification on the page
     let queryParams = `email_contact=${encodeURIComponent(email)}`;
     if (paymentIntentId) {
         queryParams += `&payment_intent=${paymentIntentId}`;
@@ -23,7 +25,7 @@ async function sendRecoveryEmail(email: string, userId: string | undefined, plan
 
     try {
         await resend.emails.send({
-            from: 'N.C. Nexus <onboarding@resend.dev>', // Update this if user has a domain
+            from: 'N.C. Nexus <onboarding@resend.dev>',
             to: email,
             subject: 'Pagamento Confirmado! Finalize seu cadastro',
             html: `
@@ -50,6 +52,36 @@ async function sendRecoveryEmail(email: string, userId: string | undefined, plan
     }
 }
 
+async function updateSubscriptionStatus(
+    customerId: string,
+    subscriptionId: string | null,
+    status: string,
+    planName: string | null = null
+) {
+    try {
+        const updateData: any = {
+            subscription_status: status,
+            updated_at: new Date().toISOString()
+        };
+
+        if (subscriptionId) updateData.stripe_subscription_id = subscriptionId;
+        if (planName) updateData.subscription_plan = planName;
+
+        const { error } = await supabaseAdmin
+            .from('company_settings')
+            .update(updateData)
+            .eq('stripe_customer_id', customerId);
+
+        if (error) {
+            console.error(`[DB Error] Failed to update status for customer ${customerId}:`, error);
+        } else {
+            console.log(`[DB Success] Updated status to ${status} for customer ${customerId}`);
+        }
+    } catch (e) {
+        console.error(`[DB Exception]`, e);
+    }
+}
+
 export async function POST(req: Request) {
     const body = await req.text();
     const signature = headers().get("Stripe-Signature") as string;
@@ -67,52 +99,81 @@ export async function POST(req: Request) {
         return new NextResponse(`Webhook Error: ${error.message}`, { status: 400 });
     }
 
-    const supabase = createClient();
-
     try {
-        // SUBSCRIPTION FLOW (Invoice Paid)
-        if (event.type === 'invoice.payment_succeeded') {
-            const invoice = event.data.object as any; // Cast to any to avoid strict typing issues with subscription/customer_email
-            const email = invoice.customer_email || invoice.customer_name; // fallback
+        // Handle the event
+        switch (event.type) {
+            case 'invoice.payment_succeeded': {
+                const invoice = event.data.object as any;
+                const customerId = invoice.customer as string;
+                const subscriptionId = invoice.subscription as string;
+                
+                let planName = 'mensal';
+                let status = 'active';
 
-            // Retrieve subscription for metadata
-            let planName = 'Premium';
-            if (invoice.subscription) {
-                const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
-                planName = sub.metadata?.planName || 'Premium';
-            }
-
-            const paymentIntentId = typeof invoice.payment_intent === 'string'
-                ? invoice.payment_intent
-                : (invoice.payment_intent as any)?.id;
-
-            if (email) {
-                await sendRecoveryEmail(email, undefined, planName, paymentIntentId);
-            }
-
-            // ... exiting logic for updating company_settings if needed
-        }
-
-        // ONE-TIME PAYMENT FLOW (PaymentIntent Succeeded)
-        if (event.type === 'payment_intent.succeeded') {
-            const paymentIntent = event.data.object as Stripe.PaymentIntent;
-            const email = paymentIntent.receipt_email || (paymentIntent.payment_method as any)?.billing_details?.email; // Need to expand or check billing_details
-
-            // Usually receipt_email is set if we updated the customer/PI
-            // To be sure, we can fetch the customer if email is missing
-            let targetEmail = email;
-
-            if (!targetEmail && paymentIntent.customer) {
-                const customer = await stripe.customers.retrieve(paymentIntent.customer as string);
-                if (!customer.deleted) {
-                    targetEmail = (customer as Stripe.Customer).email;
+                if (subscriptionId) {
+                    const sub = await stripe.subscriptions.retrieve(subscriptionId);
+                    planName = sub.metadata?.planName || 'mensal';
+                    status = sub.status; // Pode ser 'trialing' ou 'active'
                 }
+
+                await updateSubscriptionStatus(customerId, subscriptionId, status, planName);
+
+                // Send recovery email if it's the first payment or manual trigger
+                const email = invoice.customer_email || invoice.customer_name;
+                const paymentIntentId = typeof invoice.payment_intent === 'string' 
+                    ? invoice.payment_intent 
+                    : (invoice.payment_intent as any)?.id;
+
+                if (email) {
+                    await sendRecoveryEmail(email, undefined, planName, paymentIntentId);
+                }
+                break;
             }
 
-            const planName = paymentIntent.metadata?.planName;
+            case 'invoice.payment_failed': {
+                const invoice = event.data.object as any;
+                const customerId = invoice.customer as string;
+                await updateSubscriptionStatus(customerId, invoice.subscription as string, 'past_due');
+                break;
+            }
 
-            if (targetEmail) {
-                await sendRecoveryEmail(targetEmail, undefined, planName, paymentIntent.id);
+            case 'customer.subscription.deleted': {
+                const subscription = event.data.object as Stripe.Subscription;
+                const customerId = subscription.customer as string;
+                await updateSubscriptionStatus(customerId, subscription.id, 'canceled');
+                break;
+            }
+
+            case 'customer.subscription.updated': {
+                const subscription = event.data.object as Stripe.Subscription;
+                const customerId = subscription.customer as string;
+                const planName = subscription.metadata?.planName || null;
+                await updateSubscriptionStatus(customerId, subscription.id, subscription.status, planName);
+                break;
+            }
+
+            case 'payment_intent.succeeded': {
+                const paymentIntent = event.data.object as Stripe.PaymentIntent;
+                const customerId = paymentIntent.customer as string;
+                
+                if (customerId) {
+                    const planName = paymentIntent.metadata?.planName || 'mensal';
+                    await updateSubscriptionStatus(customerId, null, 'active', planName);
+
+                    // Fetch email to send recovery
+                    let targetEmail = paymentIntent.receipt_email;
+                    if (!targetEmail) {
+                        const customer = await stripe.customers.retrieve(customerId);
+                        if (!customer.deleted) {
+                            targetEmail = (customer as Stripe.Customer).email;
+                        }
+                    }
+
+                    if (targetEmail) {
+                        await sendRecoveryEmail(targetEmail, undefined, planName, paymentIntent.id);
+                    }
+                }
+                break;
             }
         }
 
