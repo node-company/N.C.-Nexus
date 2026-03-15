@@ -5,11 +5,17 @@ import { stripe } from "@/lib/stripe";
 import { createClient } from "@supabase/supabase-js";
 import { resend } from "@/lib/resend";
 
-// Create a Supabase client with the service role key to bypass RLS
-const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Create a Supabase client with the service role key only when needed
+const getSupabaseAdmin = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!url || !key) {
+        throw new Error("Missing Supabase configuration (URL or Service Role Key)");
+    }
+
+    return createClient(url, key);
+};
 
 async function sendRecoveryEmail(email: string, userId: string | undefined, planName: string | undefined, paymentIntentId: string | undefined) {
     if (!email) return;
@@ -67,7 +73,7 @@ async function updateSubscriptionStatus(
         if (subscriptionId) updateData.stripe_subscription_id = subscriptionId;
         if (planName) updateData.subscription_plan = planName;
 
-        const { error } = await supabaseAdmin
+        const { error } = await getSupabaseAdmin()
             .from('company_settings')
             .update(updateData)
             .eq('stripe_customer_id', customerId);
