@@ -15,6 +15,7 @@ export default function DashboardLayout({
     const { user, isLoading } = useAuth();
     const router = useRouter();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isVerifyingSub, setIsVerifyingSub] = useState(true);
 
     useEffect(() => {
         // ... existing auth check logic
@@ -63,7 +64,7 @@ export default function DashboardLayout({
 
             const { data: settings } = await supabase
                 .from('company_settings')
-                .select('subscription_status')
+                .select('subscription_status, stripe_customer_id')
                 .eq('user_id', user.id) // Ensure we filter by current user
                 .maybeSingle();
 
@@ -73,8 +74,9 @@ export default function DashboardLayout({
             // Block if settings is missing OR status is not valid
             // Note: If you want to allow a grace period (e.g. 'past_due'), add it to validStatuses.
             const currentStatus = settings?.subscription_status;
+            const hasStripeId = !!settings?.stripe_customer_id;
 
-            if (!currentStatus || !validStatuses.includes(currentStatus)) {
+            if (!currentStatus || !validStatuses.includes(currentStatus) || !hasStripeId) {
                 // Redirect to Pending Subscription Page
                 if (!window.location.pathname.includes('/subscription/pending')) {
                     router.push("/subscription/pending");
@@ -82,10 +84,12 @@ export default function DashboardLayout({
             }
         } catch (error) {
             console.error("Error checking subscription:", error);
+        } finally {
+            setIsVerifyingSub(false);
         }
     };
 
-    if (isLoading) {
+    if (isLoading || isVerifyingSub) {
         return (
             <div style={{
                 height: "100vh",

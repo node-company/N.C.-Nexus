@@ -18,7 +18,7 @@ export default function PortalPage() {
             background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
             position: 'relative',
             overflow: 'hidden'
-        }}>
+        }} className="mobile-padding">
             {/* Background Effects */}
             <div style={{
                 position: 'absolute',
@@ -45,9 +45,8 @@ export default function PortalPage() {
                 {/* Logo */}
                 <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'center' }}>
                     <div style={{
-                        width: '450px',
+                        width: 'clamp(280px, 80vw, 450px)',
                         height: 'auto',
-                        maxWidth: '100%',
                         filter: 'drop-shadow(0 0 20px rgba(59, 130, 246, 0.3))'
                     }}>
                         <img
@@ -73,7 +72,7 @@ export default function PortalPage() {
             }}>
                 {/* Card Dono */}
                 <Card style={{
-                    padding: '2.5rem',
+                    padding: '2rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -84,19 +83,19 @@ export default function PortalPage() {
                     transition: 'transform 0.2s, border-color 0.2s',
                     cursor: 'pointer'
                 }}
-                    className="hover:scale-105 hover:border-blue-500"
+                    className="hover:scale-105 hover:border-blue-500 mobile-full-width"
                 >
                     <div style={{
-                        padding: '1.5rem',
+                        padding: '1.25rem',
                         borderRadius: '50%',
                         background: 'rgba(59, 130, 246, 0.1)',
                         color: '#60a5fa'
                     }}>
-                        <Building2 size={48} />
+                        <Building2 size={40} />
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Sou Empreendedor</h2>
-                        <p style={{ color: '#94a3b8' }}>Acesse sua empresa e gerencie tudo.</p>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Sou Empreendedor</h2>
+                        <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Acesse sua empresa e gerencie tudo.</p>
                     </div>
                     <Link href="/login" style={{ width: '100%' }}>
                         <Button style={{
@@ -113,7 +112,7 @@ export default function PortalPage() {
 
                 {/* Card Colaborador */}
                 <Card style={{
-                    padding: '2.5rem',
+                    padding: '2rem',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -124,19 +123,19 @@ export default function PortalPage() {
                     transition: 'transform 0.2s, border-color 0.2s',
                     cursor: 'pointer'
                 }}
-                    className="hover:scale-105 hover:border-emerald-500"
+                    className="hover:scale-105 hover:border-emerald-500 mobile-full-width"
                 >
                     <div style={{
-                        padding: '1.5rem',
+                        padding: '1.25rem',
                         borderRadius: '50%',
                         background: 'rgba(16, 185, 129, 0.1)',
                         color: '#34d399'
                     }}>
-                        <Users size={48} />
+                        <Users size={40} />
                     </div>
                     <div style={{ textAlign: 'center' }}>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Sou Colaborador</h2>
-                        <p style={{ color: '#94a3b8' }}>Acesse o portal da sua equipe.</p>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Sou Colaborador</h2>
+                        <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Acesse o portal da sua equipe.</p>
                     </div>
                     <Link href="/employee/login" style={{ width: '100%' }}>
                         <Button style={{

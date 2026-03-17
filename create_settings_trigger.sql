@@ -14,7 +14,7 @@ BEGIN
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'company_name', 'Minha Empresa'),
     NEW.raw_user_meta_data->>'stripe_customer_id',
-    COALESCE(NEW.raw_user_meta_data->>'subscription_status', 'trialing'),
+    COALESCE(NEW.raw_user_meta_data->>'subscription_status', 'inactive'),
     COALESCE(NEW.raw_user_meta_data->>'subscription_plan', 'monthly')
   )
   ON CONFLICT (user_id) DO UPDATE SET

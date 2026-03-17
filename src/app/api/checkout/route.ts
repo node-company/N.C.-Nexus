@@ -6,10 +6,43 @@ export async function POST(req: NextRequest) {
     try {
         const { priceId, planName } = await req.json();
 
-        // 1. Create a Customer
-        const customer = await stripe.customers.create({
-            description: 'Guest Customer via Custom Checkout',
-        });
+        // 1. Get current user
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // 2. Identify or Create Customer
+        let customer;
+        
+        if (user?.email) {
+            // If user is logged in, try to reuse/link customer
+            customer = await getStripeCustomer(user.email, user.id, user.user_metadata?.full_name || user.email);
+            
+            // Proactively update user metadata if not already present
+            if (!user.user_metadata?.stripe_customer_id) {
+                await supabase.auth.updateUser({
+                    data: { stripe_customer_id: customer.id }
+                });
+            }
+
+            // Also check if we should update company_settings
+            const { data: settings } = await supabase
+                .from('company_settings')
+                .select('id, stripe_customer_id')
+                .eq('user_id', user.id)
+                .single();
+
+            if (settings && !settings.stripe_customer_id) {
+                await supabase
+                    .from('company_settings')
+                    .update({ stripe_customer_id: customer.id })
+                    .eq('id', settings.id);
+            }
+        } else {
+            // Guest Flow
+            customer = await stripe.customers.create({
+                description: 'Guest Customer via Custom Checkout',
+            });
+        }
 
         // Check price type
         const price = await stripe.prices.retrieve(priceId);
@@ -26,7 +59,7 @@ export async function POST(req: NextRequest) {
                 payment_behavior: 'default_incomplete',
                 payment_settings: {
                     save_default_payment_method: 'on_subscription',
-                    payment_method_types: ['card', 'boleto'],
+                    payment_method_types: ['card'],
                 },
                 expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
                 metadata: { planName: planName },

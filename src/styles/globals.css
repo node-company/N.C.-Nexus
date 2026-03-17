@@ -313,6 +313,102 @@ a {
   .hero-container {
     padding-top: 2rem !important;
   }
+
+  .mobile-scale-75 {
+    transform: scale(0.75) !important;
+  }
+
+  .mobile-scale-90 {
+    transform: scale(0.9) !important;
+  }
+
+  .mobile-padding-0 {
+    padding: 0 !important;
+  }
+
+  .mobile-scale-110 {
+    transform: scale(1.1) !important;
+  }
+
+  .mobile-text-xs {
+    font-size: 0.7rem !important;
+  }
+
+  .mobile-px-1 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  .mobile-grid-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  .mobile-padding-small {
+    padding: 0.75rem !important;
+  }
+
+  .mobile-text-sm {
+    font-size: 0.8rem !important;
+  }
+
+  .mobile-avatar-size {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
+  .mobile-avatar-overlap {
+    margin-left: -16px !important;
+  }
+
+  .mobile-pricing-card {
+    padding: 1.5rem !important;
+    gap: 1.5rem !important;
+  }
+
+  .mobile-pricing-price {
+    font-size: 2.25rem !important;
+  }
+
+  .mobile-pricing-reset {
+    transform: scale(1) !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .mobile-pricing-grid {
+    gap: 1.5rem !important;
+    padding: 0 1rem !important;
+  }
+
+  /* ─── Mobile-First: Force all side-by-side layouts to stack ─── */
+
+  /* Auto-fit grid → single column */
+  [style*="grid-template-columns: repeat(auto-fit"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Flex rows → column */
+  [style*="flex-direction: row"] {
+    flex-direction: column !important;
+  }
+
+  /* All containers: min 20px horizontal padding */
+  [style*="maxWidth"] {
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+  }
+
+  /* Gap reduction on stacked grids */
+  [style*="gap: '4rem'"] {
+    gap: 2rem !important;
+  }
+
+  /* Prevent text overflow on small screens */
+  h1, h2, h3, p {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
 }
 
 @media (min-width: 769px) {
@@ -341,4 +437,161 @@ a {
 .mobile-tabs-scroll {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Premium Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 15px rgba(0, 255, 127, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(0, 255, 127, 0.5); }
+  100% { box-shadow: 0 0 15px rgba(0, 255, 127, 0.2); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-reveal {
+  opacity: 0;
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-reveal.visible {
+  opacity: 1;
+  transform: translateY(0) !important;
+}
+
+.reveal-up { transform: translateY(30px); }
+
+/* Glow Blobs */
+.glow-blob {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(0, 255, 127, 0.15) 0%, rgba(0, 255, 127, 0) 70%);
+  border-radius: 50%;
+  filter: blur(60px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.pulse-primary {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
+
+.floating {
+  animation: float 4s infinite ease-in-out;
+}
+
+/* Sticky Mobile Header */
+.sticky-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(11, 17, 33, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  z-index: 1000;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease;
+}
+
+.sticky-nav.visible {
+  transform: translateY(0);
+}
+
+/* Modern Border Animation for Annual Plan */
+@keyframes borderRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animated-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.animated-border::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: conic-gradient(
+    transparent, 
+    transparent, 
+    transparent, 
+    #00FF7F
+  );
+  animation: borderRotate 4s linear infinite;
+  z-index: 0;
+}
+
+.animated-border-content {
+  position: relative;
+  z-index: 1;
+  background: #0B1121;
+  margin: 1px;
+  border-radius: 23px;
+  height: calc(100% - 2px);
+}
+
+/* =============================
+   Section Breathing Room
+   ============================= */
+.section-spacing {
+  padding-top: 6rem;
+  padding-bottom: 6rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+/* Subtle gradient divider between sections */
+.section-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(255, 255, 255, 0.07) 20%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.07) 80%,
+    transparent 100%
+  );
+  margin: 0;
+  border: none;
+}
+
+@media (max-width: 768px) {
+  .section-spacing {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
 }

@@ -100,7 +100,7 @@ function CheckoutSuccessContent() {
                     data: {
                         company_name: companyName,
                         stripe_customer_id: sessionData.customer,
-                        subscription_status: 'active', // Initial status
+                        subscription_status: 'trialing', // Trial behavior
                         subscription_plan: sessionData.metadata?.planName || 'monthly'
                     }
                 }
