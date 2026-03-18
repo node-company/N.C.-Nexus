@@ -20,7 +20,15 @@ const getSupabaseAdmin = () => {
 async function sendRecoveryEmail(email: string, planName: string | undefined, sessionId: string | undefined) {
     if (!email) return;
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    
+    // Ensure baseUrl is only the origin (no trailing slashes or subpaths like /register)
+    try {
+        const url = new URL(baseUrl);
+        baseUrl = url.origin;
+    } catch (e) {
+        console.error("Invalid NEXT_PUBLIC_APP_URL", baseUrl);
+    }
 
     let queryParams = `email_contact=${encodeURIComponent(email)}`;
     if (sessionId) {
@@ -138,9 +146,7 @@ export async function POST(req: Request) {
                     ? invoice.payment_intent 
                     : (invoice.payment_intent as any)?.id;
 
-                if (email) {
-                    await sendRecoveryEmail(email, planName, paymentIntentId);
-                }
+                // No email here to avoid duplication with checkout.session.completed
                 break;
             }
 
@@ -202,9 +208,7 @@ export async function POST(req: Request) {
                         }
                     }
 
-                    if (targetEmail) {
-                        await sendRecoveryEmail(targetEmail, planName, paymentIntent.id);
-                    }
+                    // No email here to avoid duplication with checkout.session.completed
                 }
                 break;
             }
