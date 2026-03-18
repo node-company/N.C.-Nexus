@@ -9,6 +9,7 @@ import {
 } from "@stripe/react-stripe-js";
 import { Loader2, CheckCircle2, ShieldCheck, ArrowLeft, Lock, User, Phone, Mail } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 
 // Initialize Stripe lazily
 let stripePromise: Promise<any> | null = null;
@@ -57,6 +58,17 @@ function CheckoutContent() {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("+55 ");
     const [showCheckout, setShowCheckout] = useState(false);
+
+    // Fetch user for pre-filling
+    useEffect(() => {
+        const supabase = createClient();
+        supabase.auth.getUser().then(({ data: { user } }) => {
+            if (user) {
+                setEmail(user.email || "");
+                setName(user.user_metadata?.full_name || "");
+            }
+        });
+    }, []);
 
     // Simple phone mask for Brazil: +55 (XX) XXXXX-XXXX
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {

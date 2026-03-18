@@ -13,9 +13,9 @@ export async function POST(req: NextRequest) {
         // 2. Identify or Create Customer
         let customer;
         
-        // Use provided email/name if guest, or auth user if logged in
-        const targetEmail = user?.email || email;
-        const targetName = user?.user_metadata?.full_name || name || targetEmail;
+        // Use provided email/name from form as priority (important for guests and testing)
+        const targetEmail = email || user?.email;
+        const targetName = name || user?.user_metadata?.full_name || targetEmail;
         const targetUserId = user?.id || 'guest';
 
         if (targetEmail) {

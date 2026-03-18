@@ -31,7 +31,7 @@ async function sendRecoveryEmail(email: string, planName: string | undefined, se
 
     try {
         await resend.emails.send({
-            from: 'N.C. Nexus <onboarding@resend.dev>',
+            from: 'N.C. Nexus <contato@nodecompany.com.br>',
             to: email,
             subject: 'Pagamento Confirmado! Finalize seu cadastro no Nexus',
             html: `
