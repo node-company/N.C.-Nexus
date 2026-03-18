@@ -21,10 +21,11 @@ function CheckoutSuccessContent() {
     // Support both new (PaymentIntent) and old (Session) flows
     const sessionId = searchParams.get('session_id');
     const paymentIntentId = searchParams.get('payment_intent');
+    const setupIntentId = searchParams.get('setup_intent');
     const emailContact = searchParams.get('email_contact');
 
     useEffect(() => {
-        if (!sessionId && !paymentIntentId) {
+        if (!sessionId && !paymentIntentId && !setupIntentId) {
             router.push('/');
             return;
         }
@@ -37,7 +38,8 @@ function CheckoutSuccessContent() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         sessionId,
-                        paymentIntentId
+                        paymentIntentId,
+                        setupIntentId
                     })
                 });
 
@@ -64,7 +66,7 @@ function CheckoutSuccessContent() {
         };
 
         verifyPayment();
-    }, [sessionId, paymentIntentId, router]);
+    }, [sessionId, paymentIntentId, setupIntentId, router]);
 
     const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();

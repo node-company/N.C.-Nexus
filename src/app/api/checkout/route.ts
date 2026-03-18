@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
     try {
-        const { priceId, planName } = await req.json();
+        const { priceId, planName, name, email, phone } = await req.json();
 
         // 1. Get current user
         const supabase = createClient();
@@ -13,91 +13,80 @@ export async function POST(req: NextRequest) {
         // 2. Identify or Create Customer
         let customer;
         
-        if (user?.email) {
-            // If user is logged in, try to reuse/link customer
-            customer = await getStripeCustomer(user.email, user.id, user.user_metadata?.full_name || user.email);
+        // Use provided email/name if guest, or auth user if logged in
+        const targetEmail = user?.email || email;
+        const targetName = user?.user_metadata?.full_name || name || targetEmail;
+        const targetUserId = user?.id || 'guest';
+
+        if (targetEmail) {
+            customer = await getStripeCustomer(targetEmail, targetUserId, targetName);
             
-            // Proactively update user metadata if not already present
-            if (!user.user_metadata?.stripe_customer_id) {
+            // Always update phone to ensure the latest/correct one is used (forcing E.164)
+            if (phone) {
+                await stripe.customers.update(customer.id, { phone: phone });
+            }
+
+            // Sync with Supabase if logged in
+            if (user && !user.user_metadata?.stripe_customer_id) {
                 await supabase.auth.updateUser({
                     data: { stripe_customer_id: customer.id }
                 });
             }
-
-            // Also check if we should update company_settings
-            const { data: settings } = await supabase
-                .from('company_settings')
-                .select('id, stripe_customer_id')
-                .eq('user_id', user.id)
-                .single();
-
-            if (settings && !settings.stripe_customer_id) {
-                await supabase
-                    .from('company_settings')
-                    .update({ stripe_customer_id: customer.id })
-                    .eq('id', settings.id);
-            }
         } else {
-            // Guest Flow
+            // Should not happen with current UI flow as email is required
             customer = await stripe.customers.create({
-                description: 'Guest Customer via Custom Checkout',
+                description: 'Guest Customer via Embedded Checkout',
+                name: targetName,
+                phone: phone
             });
         }
 
         // Check price type
         const price = await stripe.prices.retrieve(priceId);
 
-        let clientSecret = "";
-        let resourceId = "";
-
-        if (price.type === 'recurring') {
-            // SUBSCRIPTION FLOW
-            const subscription = await stripe.subscriptions.create({
-                customer: customer.id,
-                items: [{ price: priceId }],
-                trial_period_days: 7, // Conforme o plano discutido e o texto na UI
-                payment_behavior: 'default_incomplete',
-                payment_settings: {
-                    save_default_payment_method: 'on_subscription',
-                    payment_method_types: ['card'],
+        // 3. Create Checkout Session for Embedded Mode
+        const session = await stripe.checkout.sessions.create({
+            ui_mode: 'embedded',
+            line_items: [
+                {
+                    price: priceId,
+                    quantity: 1,
                 },
-                expand: ['latest_invoice.payment_intent', 'pending_setup_intent'],
-                metadata: { planName: planName },
-            });
-
-            // If there's a trial, we get a setup_intent instead of a payment_intent
-            // @ts-ignore
-            clientSecret = subscription.latest_invoice?.payment_intent?.client_secret || subscription.pending_setup_intent?.client_secret;
-            resourceId = subscription.id;
-
-        } else {
-            // ONE-TIME PAYMENT FLOW
-            // Use automatic_payment_methods so only activated methods in Stripe Dashboard appear.
-            // This prevents "invalid payment method" errors if Pix is not enabled in the account.
-            const paymentIntent = await stripe.paymentIntents.create({
-                amount: price.unit_amount!,
-                currency: price.currency,
-                customer: customer.id,
-                automatic_payment_methods: { enabled: true },
-                metadata: { planName: planName },
-            });
-
-            clientSecret = paymentIntent.client_secret!;
-            resourceId = paymentIntent.id;
-        }
-
-        if (!clientSecret) {
-            throw new Error("Failed to generate payment intent");
-        }
+            ],
+            mode: price.type === 'recurring' ? 'subscription' : 'payment',
+            customer: customer.id,
+            allow_promotion_codes: true,
+            // Pre-fill email and name in Stripe UI if possible
+            customer_update: {
+                name: 'auto',
+                address: 'auto'
+            },
+            phone_number_collection: {
+                enabled: true // Always good to have Stripe double-check/collect phone
+            },
+            return_url: `${req.headers.get('origin')}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            subscription_data: price.type === 'recurring' ? {
+                trial_period_days: 7,
+                metadata: {
+                    planName,
+                    userId: targetUserId
+                }
+            } : undefined,
+            metadata: {
+                planName,
+                userId: targetUserId,
+                customerPhone: phone || '' // Store provided phone in metadata too
+            }
+        });
 
         return NextResponse.json({
-            clientSecret: clientSecret,
-            resourceId: resourceId,
+            clientSecret: session.client_secret,
+            sessionId: session.id,
             customerId: customer.id
         });
 
     } catch (error: any) {
-        console.error("[CHECKOUT_ERROR]", error);
+        console.error("[CHECKOUT_SESSION_ERROR]", error);
         return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
     }
 }

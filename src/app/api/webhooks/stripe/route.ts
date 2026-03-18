@@ -17,14 +17,14 @@ const getSupabaseAdmin = () => {
     return createClient(url, key);
 };
 
-async function sendRecoveryEmail(email: string, userId: string | undefined, planName: string | undefined, paymentIntentId: string | undefined) {
+async function sendRecoveryEmail(email: string, planName: string | undefined, sessionId: string | undefined) {
     if (!email) return;
 
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
     let queryParams = `email_contact=${encodeURIComponent(email)}`;
-    if (paymentIntentId) {
-        queryParams += `&payment_intent=${paymentIntentId}`;
+    if (sessionId) {
+        queryParams += `&session_id=${sessionId}`;
     }
 
     const link = `${baseUrl}/checkout/success?${queryParams}`;
@@ -33,26 +33,34 @@ async function sendRecoveryEmail(email: string, userId: string | undefined, plan
         await resend.emails.send({
             from: 'N.C. Nexus <onboarding@resend.dev>',
             to: email,
-            subject: 'Pagamento Confirmado! Finalize seu cadastro',
+            subject: 'Pagamento Confirmado! Finalize seu cadastro no Nexus',
             html: `
-                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h1>Pagamento Recebido! 🚀</h1>
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6;">
+                    <h1 style="color: #00FF7F;">Sua assinatura está ativa! 🚀</h1>
                     <p>Olá,</p>
-                    <p>Recebemos a confirmação do seu pagamento para o plano <strong>${planName || 'Premium'}</strong>.</p>
-                    <p>Para acessar sua conta, você precisa definir sua senha e nome da empresa. Clique no botão abaixo para finalizar:</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="${link}" style="background-color: #00FF7F; color: #000; padding: 15px 25px; text-decoration: none; font-weight: bold; border-radius: 5px; display: inline-block;">
-                            Finalizar Cadastro Agora
+                    <p>Recebemos a confirmação do seu pagamento para o plano <strong>${planName || 'Premium'}</strong> do N.C. Nexus.</p>
+                    <p>Estamos muito felizes em ter você conosco! Para começar a gerenciar sua empresa, você só precisa finalizar seu cadastro criando uma senha.</p>
+                    
+                    <div style="text-align: center; margin: 35px 0;">
+                        <a href="${link}" style="background-color: #00FF7F; color: #020617; padding: 16px 30px; text-decoration: none; font-weight: bold; border-radius: 12px; display: inline-block; font-size: 16px; box-shadow: 0 4px 6px rgba(0,255,127,0.2);">
+                            Finalizar Meu Cadastro Agora
                         </a>
                     </div>
-                    <p>Se o botão não funcionar, copie e cole este link:</p>
-                    <p><a href="${link}">${link}</a></p>
-                    <hr />
-                    <p style="font-size: 12px; color: #666;">Se você já finalizou seu cadastro, pode ignorar este e-mail.</p>
+                    
+                    <p style="font-size: 14px;">Se o botão acima não funcionar, copie e cole este link no seu navegador:</p>
+                    <p style="background: #f4f4f4; padding: 12px; border-radius: 8px; font-size: 13px; word-break: break-all;">
+                        <a href="${link}" style="color: #666;">${link}</a>
+                    </p>
+                    
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;" />
+                    <p style="font-size: 12px; color: #999; text-align: center;">
+                        Se você já finalizou seu cadastro e já acessou o sistema, pode desconsiderar este e-mail.<br>
+                        N.C. Nexus - Soluções para sua empresa.
+                    </p>
                 </div>
             `
         });
-        console.log(`[Email Sent] Recovery email sent to ${email}`);
+        console.log(`[Email Sent] Onboarding email sent to ${email}`);
     } catch (e) {
         console.error(`[Email Error] Failed to send email to ${email}`, e);
     }
@@ -131,7 +139,7 @@ export async function POST(req: Request) {
                     : (invoice.payment_intent as any)?.id;
 
                 if (email) {
-                    await sendRecoveryEmail(email, undefined, planName, paymentIntentId);
+                    await sendRecoveryEmail(email, planName, paymentIntentId);
                 }
                 break;
             }
@@ -158,6 +166,25 @@ export async function POST(req: Request) {
                 break;
             }
 
+            case 'checkout.session.completed': {
+                const session = event.data.object as Stripe.Checkout.Session;
+                const customerId = session.customer as string;
+                const subscriptionId = session.subscription as string;
+                const planName = session.metadata?.planName || 'Premium';
+                const email = session.customer_details?.email || session.customer_email;
+
+                console.log(`[Webhook] Checkout session completed for ${email}`);
+
+                // 1. Update status in DB
+                await updateSubscriptionStatus(customerId, subscriptionId, 'active', planName);
+
+                // 2. Send email with verification link
+                if (email) {
+                    await sendRecoveryEmail(email, planName, session.id);
+                }
+                break;
+            }
+
             case 'payment_intent.succeeded': {
                 const paymentIntent = event.data.object as Stripe.PaymentIntent;
                 const customerId = paymentIntent.customer as string;
@@ -176,7 +203,7 @@ export async function POST(req: Request) {
                     }
 
                     if (targetEmail) {
-                        await sendRecoveryEmail(targetEmail, undefined, planName, paymentIntent.id);
+                        await sendRecoveryEmail(targetEmail, planName, paymentIntent.id);
                     }
                 }
                 break;

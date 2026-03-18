@@ -446,7 +446,7 @@ export default function LandingPage() {
             <section className="section-spacing" style={{ background: '#0B1121', position: 'relative', overflow: 'hidden' }}>
                 <div className="glow-blob" style={{ bottom: '-10%', left: '-5%', width: '400px', height: '400px' }} />
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center' }}>
+                    <div className="mobile-stack animate-reveal reveal-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center' }}>
                         <div style={{ flex: 1 }}>
                             <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '1rem', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
                                 Você sabe o preço certo pra cobrar <span style={{ color: '#f87171' }}>sem vender no prejuízo?</span>
@@ -515,7 +515,7 @@ export default function LandingPage() {
             {/* Reports Section */}
             <section id="reports" className="section-spacing" style={{ background: '#0f172a' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+                    <div className="animate-reveal reveal-up" style={{ textAlign: 'center', marginBottom: '5rem' }}>
                         <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '1rem', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
                             Seu negócio em números.<br />
                             <span style={{ color: '#00FF7F' }}>Sem você fazer nada.</span>
@@ -525,7 +525,7 @@ export default function LandingPage() {
                         </p>
                     </div>
 
-                    <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
+                    <div className="mobile-stack animate-reveal reveal-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
                         <ReportVisual type="fluxo" title="Fluxo de Caixa" icon={<Wallet size={24} color="#00FF7F" />} />
                         <ReportVisual type="vendas" title="Vendas por Período" icon={<TrendingUp size={24} color="#60a5fa" />} />
                         <ReportVisual type="dre" title="DRE Automático" icon={<BarChart3 size={24} color="#f87171" />} />
@@ -539,7 +539,7 @@ export default function LandingPage() {
             {/* Team Management Section */}
             <section className="section-spacing" style={{ background: '#0B1121' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div className="mobile-stack" style={{ display: 'flex', gap: '4rem', alignItems: 'center' }}>
+                    <div className="mobile-stack animate-reveal reveal-up" style={{ display: 'flex', gap: '4rem', alignItems: 'center' }}>
                         <div style={{ flex: 1 }}>
                             <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '1rem', lineHeight: 1.15, letterSpacing: '-0.02em' }}>
                                 Sua equipe vende mais.<br />
@@ -614,7 +614,7 @@ export default function LandingPage() {
             {/* Comparison Table Section */}
             <section className="section-spacing" style={{ background: '#0f172a' }}>
                 <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                    <div className="animate-reveal reveal-up" style={{ textAlign: 'center', marginBottom: '4rem' }}>
                         <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
                             Compare antes de decidir.
                         </h2>
@@ -660,7 +660,7 @@ export default function LandingPage() {
             {/* Onboarding Section */}
             <section id="onboarding" className="section-spacing" style={{ background: '#0B1121' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+                    <div className="animate-reveal reveal-up" style={{ textAlign: 'center', marginBottom: '5rem' }}>
                         <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
                             Mais facilidade e controle para a sua <span style={{ color: '#00FF7F' }}>gestão</span>
                         </h2>
@@ -706,7 +706,7 @@ export default function LandingPage() {
             {/* Mobile Section */}
             <section className="section-spacing" style={{ background: '#0f172a' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div className="mobile-stack" style={{ display: 'flex', gap: '4rem', alignItems: 'center' }}>
+                    <div className="mobile-stack animate-reveal reveal-up" style={{ display: 'flex', gap: '4rem', alignItems: 'center' }}>
                         <div style={{ flex: 1 }}>
                             <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
                                 Sua loja <span style={{ color: '#00FF7F' }}>no bolso.</span>
@@ -766,12 +766,12 @@ export default function LandingPage() {
             {/* Testimonials Section */}
             <section id="testimonials" className="section-spacing" style={{ background: '#0f172a' }}>
                 <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                    <div className="animate-reveal reveal-up" style={{ textAlign: 'center', marginBottom: '4rem' }}>
                         <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
                             Quem usa, <span style={{ color: '#00FF7F' }}>não volta pra planilha</span>
                         </h2>
                     </div>
-                    <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                    <div className="mobile-stack animate-reveal reveal-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                         <TestimonialCard 
                             index={1}
                             name="Ricardo Silva"
@@ -799,7 +799,7 @@ export default function LandingPage() {
             {/* Pricing Section (Planos) */}
             <section id="pricing" className="section-spacing" style={{ background: '#0B1121' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+                    <div className="animate-reveal reveal-up" style={{ textAlign: 'center', marginBottom: '5rem' }}>
                         <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
                             Um investimento que <span style={{ color: '#00FF7F' }}>se paga no primeiro mês.</span>
                         </h2>
@@ -818,7 +818,7 @@ export default function LandingPage() {
                         </div>
                     </div>
 
-                    <div className="mobile-pricing-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
+                    <div className="mobile-pricing-grid animate-reveal reveal-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
                         {/* Monthly */}
                         <PricingCard
                             title="Plano Mensal"
@@ -856,13 +856,13 @@ export default function LandingPage() {
             {/* FAQ Section */}
             <section className="section-spacing" style={{ background: '#0f172a' }}>
                 <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+                    <div className="animate-reveal reveal-up" style={{ textAlign: 'center', marginBottom: '4rem' }}>
                         <h2 style={{ fontSize: 'clamp(1.75rem, 5vw, 2.25rem)', fontWeight: 800, marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
                             Perguntas Frequentes
                         </h2>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="animate-reveal reveal-up" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <FaqItem 
                             question="Preciso de cartão de crédito para testar?" 
                             answer="Sim. O cartão é necessário para evitar fraudes e garantir que apenas usuários reais acessem o sistema. Porém, NENHUMA cobrança será feita nos primeiros 7 dias. Você pode cancelar com um clique antes do prazo." 
@@ -945,32 +945,40 @@ export default function LandingPage() {
             </footer>
 
             {/* WhatsApp Floating Button */}
-            <a
-                href="https://wa.me/5511999999999"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                    position: 'fixed',
-                    bottom: '2rem',
-                    right: '2rem',
+            <div style={{ position: 'fixed', bottom: '2rem', right: '2rem', zIndex: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+                <a
+                    href={`https://wa.me/5527992617000?text=${encodeURIComponent('Olá! Vim pelo site do Nexus e gostaria de saber mais sobre o sistema. Podem me ajudar?')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                        background: '#25D366',
+                        color: 'white',
+                        width: '64px',
+                        height: '64px',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 10px 25px -3px rgba(37, 211, 102, 0.4)',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        textDecoration: 'none'
+                    }}
+                    className="hover:scale-110"
+                >
+                    <svg viewBox="0 0 24 24" width="30" height="30" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                </a>
+                <span style={{
                     background: '#25D366',
                     color: 'white',
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-                    zIndex: 100,
-                    cursor: 'pointer',
-                    transition: 'transform 0.2s',
-                    textDecoration: 'none'
-                }}
-                className="hover:scale-110"
-            >
-                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
-            </a>
+                    fontSize: '0.6rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '99px',
+                }}>Suporte</span>
+            </div>
         </main>
     );
 }
