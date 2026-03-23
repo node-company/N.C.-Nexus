@@ -47,7 +47,8 @@ const PLANS = {
 function CheckoutContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const planName = searchParams.get("plan") || "Anual";
+    const rawPlan = searchParams.get("plan") || "Anual";
+    const planName = rawPlan.startsWith("Plano ") ? rawPlan.replace("Plano ", "") : rawPlan;
 
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -133,6 +134,15 @@ function CheckoutContent() {
 
             const data = await res.json();
             if (data.clientSecret) {
+                // Track InitiateCheckout
+                if (typeof window !== "undefined" && (window as any).fbq) {
+                    (window as any).fbq('track', 'InitiateCheckout', {
+                        content_name: planName,
+                        content_category: 'Subscription',
+                        value: parseFloat(selectedPlan.monthlyPrice.replace(/[^\d.,]/g, "").replace(",", ".")),
+                        currency: 'BRL'
+                    });
+                }
                 setClientSecret(data.clientSecret);
                 setShowCheckout(true);
             } else {
@@ -213,7 +223,8 @@ function CheckoutContent() {
                             background: 'rgba(30, 41, 59, 0.5)',
                             borderRadius: '24px',
                             padding: '2rem',
-                            border: '1px solid rgba(255,255,255,0.05)',
+                            border: '2px solid #00FF7F',
+                            boxShadow: '0 0 20px rgba(0, 255, 127, 0.1)',
                         }}>
                             <h3 style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: 500, marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Você escolheu o plano</h3>
                             <h2 style={{ fontSize: '2.5rem', fontWeight: 800, color: 'white', marginBottom: '0.5rem' }}>{planName}</h2>

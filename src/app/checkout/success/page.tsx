@@ -55,6 +55,16 @@ function CheckoutSuccessContent() {
                     }
                 }
 
+                // Track Purchase
+                if (typeof window !== "undefined" && (window as any).fbq) {
+                    (window as any).fbq('track', 'Purchase', {
+                        value: data.amount / 100, // Stripe values are in cents
+                        currency: 'BRL',
+                        content_name: data.metadata?.planName || 'Subscription',
+                        content_type: 'product'
+                    });
+                }
+
                 setSessionData(data);
             } catch (err: any) {
                 console.error(err);
@@ -122,6 +132,15 @@ function CheckoutSuccessContent() {
             }
 
             alert("Conta criada com sucesso!");
+            
+            // Track CompleteRegistration
+            if (typeof window !== "undefined" && (window as any).fbq) {
+                (window as any).fbq('track', 'CompleteRegistration', {
+                    content_name: companyName,
+                    status: 'success'
+                });
+            }
+
             router.push("/dashboard"); // Direct to dashboard
 
         } catch (err: any) {
