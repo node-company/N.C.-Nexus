@@ -5,6 +5,11 @@ import { AuthProvider } from "@/context/AuthContext";
 export const metadata: Metadata = {
     title: "SaaS de Gestão | Antigravity",
     description: "Gestão Empresarial com Inteligência Artificial",
+    verification: {
+        other: {
+            "facebook-domain-verification": "fq0uiux06q9m4th2bpqskf5e5y081l",
+        },
+    },
 };
 
 import MetaPixel from "@/components/analytics/MetaPixel";
