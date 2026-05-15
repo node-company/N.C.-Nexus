@@ -40,13 +40,22 @@ interface PurchaseItem {
     unitCost: number;
 }
 
+interface PurchaseLog {
+    id: string;
+    description: string;
+    amount: number;
+    date: string;
+}
+
 export default function InventoryPage() {
     const supabase = createClient();
     const [products, setProducts] = useState<Product[]>([]);
     const [logs, setLogs] = useState<InventoryLog[]>([]);
+    const [purchases, setPurchases] = useState<PurchaseLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [logFilter, setLogFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
+    const [historyTab, setHistoryTab] = useState<'MOVEMENTS' | 'PURCHASES'>('MOVEMENTS');
     const { can_manage_products } = usePermissions();
 
     // Modal State
@@ -73,7 +82,18 @@ export default function InventoryPage() {
     useEffect(() => {
         fetchInventory();
         fetchLogs();
+        fetchPurchases();
     }, []);
+
+    async function fetchPurchases() {
+        const { data } = await supabase
+            .from("transactions")
+            .select("id, description, amount, date")
+            .ilike("description", "%Compra de Estoque%")
+            .order("date", { ascending: false })
+            .limit(20);
+        if (data) setPurchases(data as any);
+    }
 
     async function fetchInventory() {
         const { data } = await supabase
@@ -282,26 +302,28 @@ export default function InventoryPage() {
             const today = new Date().toISOString().split('T')[0];
             
             if (totalProductCost > 0) {
-                await supabase.from("transactions").insert({
+                const { error: tError } = await supabase.from("transactions").insert({
                     user_id: user.id,
                     description: `Compra de Estoque (${validItems.length} itens): ${purchaseReason}`,
                     amount: totalProductCost,
                     type: 'EXPENSE',
-                    category: 'Compra de Produto',
+                    category: 'Materiais',
                     date: today
                 });
+                if (tError) throw tError;
             }
 
             const shipping = parseFloat(purchaseShipping) || 0;
             if (shipping > 0) {
-                await supabase.from("transactions").insert({
+                const { error: sError } = await supabase.from("transactions").insert({
                     user_id: user.id,
                     description: `Frete Entrada de Estoque: ${purchaseReason}`,
                     amount: shipping,
                     type: 'EXPENSE',
-                    category: 'Frete',
+                    category: 'Operacional',
                     date: today
                 });
+                if (sError) throw sError;
             }
 
             await fetchInventory();
@@ -523,12 +545,38 @@ export default function InventoryPage() {
 
                 {/* Right: Recent History */}
                 <div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <History size={20} style={{ color: 'var(--color-primary)' }} /> Histórico Recente
-                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0 }}>
+                            <History size={20} style={{ color: 'var(--color-primary)' }} /> Histórico
+                        </h3>
+                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px' }}>
+                            <button
+                                onClick={() => setHistoryTab('MOVEMENTS')}
+                                style={{
+                                    background: historyTab === 'MOVEMENTS' ? 'var(--color-primary)' : 'transparent',
+                                    color: historyTab === 'MOVEMENTS' ? 'white' : '#9ca3af',
+                                    border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                            >
+                                Itens
+                            </button>
+                            <button
+                                onClick={() => setHistoryTab('PURCHASES')}
+                                style={{
+                                    background: historyTab === 'PURCHASES' ? 'var(--color-primary)' : 'transparent',
+                                    color: historyTab === 'PURCHASES' ? 'white' : '#9ca3af',
+                                    border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+                                }}
+                            >
+                                Compras
+                            </button>
+                        </div>
+                    </div>
 
                     <div style={{ ...glassStyle, padding: 0, overflow: 'hidden' }}>
-                        {/* Filters */}
+                        {historyTab === 'MOVEMENTS' && (
+                            <>
+                                {/* Filters */}
                         <div style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                             {(['ALL', 'IN', 'OUT'] as const).map((filter) => (
                                 <button
@@ -575,8 +623,38 @@ export default function InventoryPage() {
                                         Motivo: {log.reason}
                                     </p>
                                 </div>
+                                </div>
                             </div>
                         ))}
+                        
+                        {historyTab === 'PURCHASES' && purchases.map((purchase) => (
+                            <div key={purchase.id} style={{ padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
+                                <div style={{
+                                    padding: '0.5rem', borderRadius: '50%', flexShrink: 0,
+                                    background: 'rgba(59, 130, 246, 0.1)',
+                                    color: '#3b82f6'
+                                }}>
+                                    <Plus size={20} />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.25rem' }}>
+                                        <p style={{ fontSize: '0.95rem', fontWeight: 600, color: 'white', margin: 0 }}>Lote de Produtos</p>
+                                        <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{format(new Date(purchase.date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                                    </div>
+                                    <p style={{ fontSize: '0.85rem', color: '#9ca3af', margin: '0 0 0.25rem 0' }}>
+                                        {purchase.description}
+                                    </p>
+                                    <p style={{ fontSize: '0.9rem', color: 'white', fontWeight: 700, margin: 0 }}>
+                                        R$ {purchase.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                        {historyTab === 'PURCHASES' && purchases.length === 0 && (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: '#6b7280' }}>Nenhuma compra registrada.</div>
+                        )}
+                        </>
+                    )}
                     </div>
                 </div>
             </div>
