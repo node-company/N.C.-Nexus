@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Search, ArrowUpCircle, ArrowDownCircle, History, X } from "lucide-react";
+import { Search, ArrowUpCircle, ArrowDownCircle, History, X, Plus, Trash } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -32,6 +32,14 @@ interface InventoryLog {
     variant?: { size: string };
 }
 
+interface PurchaseItem {
+    id: string;
+    product: Product | null;
+    variantId: string;
+    quantity: number;
+    unitCost: number;
+}
+
 export default function InventoryPage() {
     const supabase = createClient();
     const [products, setProducts] = useState<Product[]>([]);
@@ -53,6 +61,12 @@ export default function InventoryPage() {
     });
     const [modalOpen, setModalOpen] = useState(false);
     const [saving, setSaving] = useState(false);
+
+    // Purchase Modal State
+    const [purchaseModalOpen, setPurchaseModalOpen] = useState(false);
+    const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
+    const [purchaseShipping, setPurchaseShipping] = useState("");
+    const [purchaseReason, setPurchaseReason] = useState("Compra de Fornecedor");
 
     // Initial Fetch
     useEffect(() => {
@@ -205,6 +219,97 @@ export default function InventoryPage() {
         }
     };
 
+    const openPurchaseModal = () => {
+        setPurchaseItems([{ id: Date.now().toString(), product: null, variantId: "", quantity: 1, unitCost: 0 }]);
+        setPurchaseShipping("");
+        setPurchaseReason("Compra de Fornecedor");
+        setPurchaseModalOpen(true);
+    };
+
+    const addPurchaseItem = () => {
+        setPurchaseItems([...purchaseItems, { id: Date.now().toString() + Math.random(), product: null, variantId: "", quantity: 1, unitCost: 0 }]);
+    };
+
+    const removePurchaseItem = (id: string) => {
+        setPurchaseItems(purchaseItems.filter(item => item.id !== id));
+    };
+
+    const handleSavePurchase = async () => {
+        const validItems = purchaseItems.filter(item => item.product && item.variantId && item.quantity > 0);
+        if (validItems.length === 0) {
+            alert("Adicione pelo menos um item válido com quantidade maior que zero.");
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("Auth error");
+
+            let totalProductCost = 0;
+
+            for (const item of validItems) {
+                const variant = item.product!.product_variants.find(v => v.id === item.variantId);
+                if (!variant) continue;
+
+                const newStock = variant.stock_quantity + item.quantity;
+                totalProductCost += (item.unitCost * item.quantity);
+
+                const { error: updateError } = await supabase
+                    .from("product_variants")
+                    .update({ stock_quantity: newStock })
+                    .eq("id", item.variantId);
+                if (updateError) throw updateError;
+
+                const { error: logError } = await supabase
+                    .from("inventory_movements")
+                    .insert({
+                        user_id: user.id,
+                        product_id: item.product!.id,
+                        variant_id: item.variantId,
+                        type: 'IN',
+                        quantity: item.quantity,
+                        reason: purchaseReason || "Compra em Lote"
+                    });
+                if (logError) throw logError;
+            }
+
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (totalProductCost > 0) {
+                await supabase.from("transactions").insert({
+                    user_id: user.id,
+                    description: `Compra de Estoque (${validItems.length} itens): ${purchaseReason}`,
+                    amount: totalProductCost,
+                    type: 'EXPENSE',
+                    category: 'Compra de Produto',
+                    date: today
+                });
+            }
+
+            const shipping = parseFloat(purchaseShipping) || 0;
+            if (shipping > 0) {
+                await supabase.from("transactions").insert({
+                    user_id: user.id,
+                    description: `Frete Entrada de Estoque: ${purchaseReason}`,
+                    amount: shipping,
+                    type: 'EXPENSE',
+                    category: 'Frete',
+                    date: today
+                });
+            }
+
+            await fetchInventory();
+            await fetchLogs();
+            setPurchaseModalOpen(false);
+        } catch (error) {
+            console.error("Error saving purchase:", error);
+            alert("Erro ao registrar compra.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     const filteredProducts = products.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -226,7 +331,26 @@ export default function InventoryPage() {
                 <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                     Estoque
                 </h1>
-                <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Controle de entradas, saídas e auditoria.</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                    <p style={{ color: '#9ca3af', fontSize: '1rem', margin: 0 }}>Controle de entradas, saídas e auditoria.</p>
+                    {can_manage_products && (
+                        <Button
+                            onClick={openPurchaseModal}
+                            style={{
+                                background: 'var(--color-primary)',
+                                color: 'white',
+                                padding: '8px 16px',
+                                borderRadius: '8px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontWeight: 600
+                            }}
+                        >
+                            <Plus size={18} /> Registrar Compra
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <div className="inventory-grid mobile-stack">
@@ -595,6 +719,156 @@ export default function InventoryPage() {
                     </div>
                 )
             }
+
+            {/* Purchase Modal */}
+            {purchaseModalOpen && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)'
+                }}>
+                    <div style={{
+                        ...glassStyle,
+                        background: '#111',
+                        width: '100%', maxWidth: '800px', maxHeight: '90vh', padding: '2rem', margin: '1rem', position: 'relative',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        display: 'flex', flexDirection: 'column'
+                    }}>
+                        <Button
+                            onClick={() => setPurchaseModalOpen(false)}
+                            style={{ position: 'absolute', right: '1rem', top: '1rem', background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer' }}
+                        >
+                            <X size={24} />
+                        </Button>
+
+                        <div style={{ marginBottom: '1.5rem', flexShrink: 0 }}>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem' }}>Registrar Compra em Lote</h2>
+                            <p style={{ color: '#9ca3af' }}>Adicione produtos ao pedido e registre a entrada no estoque.</p>
+                        </div>
+
+                        <div style={{ overflowY: 'auto', flex: 1, paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {purchaseItems.map((item) => (
+                                <div key={item.id} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                                    
+                                    <div style={{ gridColumn: 'span 2' }}>
+                                        <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Produto</label>
+                                        <select
+                                            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: 'white', outline: 'none' }}
+                                            value={item.product?.id || ""}
+                                            onChange={(e) => {
+                                                const selected = products.find(p => p.id === e.target.value) || null;
+                                                setPurchaseItems(purchaseItems.map(pItem => pItem.id === item.id ? { ...pItem, product: selected, variantId: selected?.product_variants[0]?.id || "" } : pItem));
+                                            }}
+                                        >
+                                            <option value="" disabled>Selecione um produto</option>
+                                            {products.map(p => (
+                                                <option key={p.id} value={p.id} style={{ background: '#222' }}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Tamanho</label>
+                                        <select
+                                            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: 'white', outline: 'none' }}
+                                            value={item.variantId}
+                                            onChange={(e) => {
+                                                setPurchaseItems(purchaseItems.map(pItem => pItem.id === item.id ? { ...pItem, variantId: e.target.value } : pItem));
+                                            }}
+                                            disabled={!item.product}
+                                        >
+                                            <option value="" disabled>Selecione</option>
+                                            {item.product?.product_variants.map(v => (
+                                                <option key={v.id} value={v.id} style={{ background: '#222' }}>{v.size} (Est: {v.stock_quantity})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Qtd</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: 'white', outline: 'none' }}
+                                            value={item.quantity}
+                                            onChange={(e) => setPurchaseItems(purchaseItems.map(pItem => pItem.id === item.id ? { ...pItem, quantity: parseInt(e.target.value) || 0 } : pItem))}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.7rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Custo Un. (R$)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '10px', color: 'white', outline: 'none' }}
+                                            value={item.unitCost}
+                                            onChange={(e) => setPurchaseItems(purchaseItems.map(pItem => pItem.id === item.id ? { ...pItem, unitCost: parseFloat(e.target.value) || 0 } : pItem))}
+                                        />
+                                    </div>
+
+                                    <Button
+                                        onClick={() => removePurchaseItem(item.id)}
+                                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', padding: '10px', height: '100%', display: 'flex', alignItems: 'center', justifySelf: 'start' }}
+                                        disabled={purchaseItems.length === 1}
+                                    >
+                                        <Trash size={18} />
+                                    </Button>
+                                </div>
+                            ))}
+
+                            <Button
+                                onClick={addPurchaseItem}
+                                style={{
+                                    background: 'transparent', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: '12px', padding: '1rem',
+                                    color: '#9ca3af', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 600
+                                }}
+                            >
+                                <Plus size={18} /> Adicionar Produto
+                            </Button>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                                <div>
+                                    <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Valor Total do Frete (R$)</label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', color: 'white', outline: 'none' }}
+                                        value={purchaseShipping}
+                                        onChange={(e) => setPurchaseShipping(e.target.value)}
+                                        placeholder="0,00"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem' }}>Motivo / Descrição</label>
+                                    <input
+                                        type="text"
+                                        style={{ width: '100%', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', color: 'white', outline: 'none' }}
+                                        value={purchaseReason}
+                                        onChange={(e) => setPurchaseReason(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '1.5rem', flexShrink: 0, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                                <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>Total Produtos:</span>
+                                <span style={{ color: 'white', fontSize: '1.25rem', fontWeight: 700, marginLeft: '0.5rem' }}>
+                                    R$ {purchaseItems.reduce((acc, item) => acc + (item.unitCost * item.quantity), 0).toFixed(2).replace('.', ',')}
+                                </span>
+                            </div>
+                            <Button
+                                onClick={handleSavePurchase}
+                                disabled={saving}
+                                style={{ background: 'var(--color-primary)', border: 'none', borderRadius: '8px', padding: '12px 24px', color: 'white', fontWeight: 700 }}
+                            >
+                                {saving ? "Salvando..." : "Confirmar Compra"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }
