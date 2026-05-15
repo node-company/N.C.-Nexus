@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
-import { Plus, Edit, Trash2, Search, User, Phone, MapPin } from "lucide-react";
+import { Plus, Edit, Trash2, Search, User, Phone, MapPin, Loader2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Client {
@@ -20,6 +20,12 @@ export default function ClientsPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    
+    // Custom Delete Modal State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     const supabase = createClient();
     const router = useRouter();
 
@@ -32,6 +38,7 @@ export default function ClientsPage() {
             const { data, error } = await supabase
                 .from("clients")
                 .select("*")
+                .eq("active", true)
                 .order("created_at", { ascending: false });
 
             if (error) {
@@ -45,16 +52,27 @@ export default function ClientsPage() {
         }
     }
 
-    async function handleDelete(id: string) {
-        if (!confirm("Tem certeza que deseja excluir este cliente?")) return;
+    async function handleDelete() {
+        if (!clientToDelete) return;
+        setIsDeleting(true);
 
         try {
-            const { error } = await supabase.from("clients").delete().eq("id", id);
+            // Soft delete: update active to false instead of deleting the record
+            const { error } = await supabase
+                .from("clients")
+                .update({ active: false })
+                .eq("id", clientToDelete.id);
+
             if (error) throw error;
-            setClients(clients.filter((c) => c.id !== id));
+            
+            setClients(clients.filter((c) => c.id !== clientToDelete.id));
+            setShowDeleteModal(false);
+            setClientToDelete(null);
         } catch (error) {
             console.error("Error deleting client:", error);
             alert("Erro ao excluir cliente");
+        } finally {
+            setIsDeleting(false);
         }
     }
 
@@ -74,43 +92,70 @@ export default function ClientsPage() {
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem', animation: 'fadeIn 0.6s ease' }}>
             {/* Header Section */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ maxWidth: '100%' }}>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                    <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                         Clientes
                     </h1>
-                    <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Gerencie sua base de clientes.</p>
+                    <p style={{ color: '#9ca3af', marginTop: '0.25rem', fontSize: '0.95rem' }}>Gerencie sua base de clientes e contatos.</p>
                 </div>
+                <div className="desktop-only">
+                    <Link href="/dashboard/clients/new">
+                        <Button style={{
+                            background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+                            border: 'none',
+                            padding: '12px 24px',
+                            height: 'auto',
+                            fontSize: '1rem',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            boxShadow: '0 4px 14px 0 rgba(0,0,0,0.3)'
+                        }}>
+                            <Plus size={20} />
+                            Novo Cliente
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+
+            {/* Mobile FAB */}
+            <div className="mobile-only" style={{ position: 'fixed', bottom: '2rem', right: '1.5rem', zIndex: 100 }}>
                 <Link href="/dashboard/clients/new">
-                    <Button style={{
-                        background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+                    <button style={{
+                        width: '60px',
+                        height: '60px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
                         border: 'none',
-                        padding: '12px 24px',
-                        height: 'auto',
-                        fontSize: '1rem',
-                        fontWeight: 600,
+                        color: 'white',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.5rem',
-                        boxShadow: '0 4px 14px 0 rgba(0,0,0,0.3)'
-                    }}>
-                        <Plus size={20} />
-                        Novo Cliente
-                    </Button>
+                        justifyContent: 'center',
+                        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px var(--color-primary-glow)',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }}
+                        onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.9) rotate(-10deg)'}
+                        onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1) rotate(0)'}
+                    >
+                        <Plus size={32} strokeWidth={2.5} />
+                    </button>
                 </Link>
             </div>
 
             {/* Search Bar */}
-            <div style={{
+            <div className="mobile-full-width" style={{
                 ...glassStyle,
                 marginBottom: '2rem',
-                padding: '1rem',
+                padding: '0.875rem 1.25rem',
                 display: 'flex',
                 alignItems: 'center',
                 width: '100%',
                 maxWidth: '500px'
             }}>
-                <Search style={{ color: '#9ca3af', marginRight: '1rem' }} size={20} />
+                <Search style={{ color: '#9ca3af', marginRight: '0.75rem' }} size={18} />
                 <input
                     type="text"
                     placeholder="Buscar por nome ou CPF/CNPJ..."
@@ -197,7 +242,10 @@ export default function ClientsPage() {
                                                         <Edit size={18} />
                                                     </Button>
                                                     <Button
-                                                        onClick={() => handleDelete(client.id)}
+                                                        onClick={() => {
+                                                            setClientToDelete(client);
+                                                            setShowDeleteModal(true);
+                                                        }}
                                                         style={{ width: '40px', height: '40px', padding: 0, borderRadius: '8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                                         title="Excluir"
                                                     >
@@ -216,55 +264,68 @@ export default function ClientsPage() {
                     <div className="mobile-only mobile-card-view" style={{ padding: '1rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {filteredClients.map((client) => (
-                                <div key={client.id} className="mobile-card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1.25rem' }}>
-                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
+                                <div key={client.id} className="mobile-card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                                         <div style={{
-                                            width: '50px', height: '50px', borderRadius: '50%',
+                                            width: '60px', height: '60px', borderRadius: '50%',
                                             background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)', border: '1px solid rgba(255,255,255,0.05)',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0
                                         }}>
-                                            <User style={{ color: '#9ca3af' }} size={20} />
+                                            <User style={{ color: '#9ca3af' }} size={24} />
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.name}</div>
-                                            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>{client.document || "Sem documento"}</div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                                                <h3 style={{ fontWeight: 700, fontSize: '1.1rem', color: 'white', margin: 0, marginBottom: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {client.name}
+                                                </h3>
+                                            </div>
+                                            <div style={{ color: '#6b7280', fontSize: '0.85rem', fontWeight: 500 }}>{client.document || "Sem documento"}</div>
                                         </div>
                                     </div>
 
-                                    {(client.phone || client.email) && (
-                                        <div className="mobile-card-section" style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '0.75rem', marginBottom: '1rem' }}>
-                                            {client.phone && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: client.email ? '0.5rem' : 0 }}>
-                                                    <Phone size={14} style={{ color: '#3b82f6' }} />
-                                                    <span style={{ fontSize: '0.9rem', color: '#d1d5db' }}>{client.phone}</span>
-                                                </div>
-                                            )}
-                                            {client.email && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                    <User size={14} style={{ color: '#8b5cf6' }} />
-                                                    <span style={{ fontSize: '0.9rem', color: '#d1d5db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.email}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem', background: 'rgba(255,255,255,0.02)', padding: '0.875rem', borderRadius: '10px' }}>
+                                        {(client.phone || client.email) ? (
+                                            <>
+                                                {client.phone && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <Phone size={14} style={{ color: '#3b82f6' }} />
+                                                        <span style={{ fontSize: '0.9rem', color: '#d1d5db' }}>{client.phone}</span>
+                                                    </div>
+                                                )}
+                                                {client.email && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                        <User size={14} style={{ color: '#8b5cf6' }} />
+                                                        <span style={{ fontSize: '0.9rem', color: '#d1d5db', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{client.email}</span>
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <span style={{ color: '#6b7280', fontSize: '0.85rem', fontStyle: 'italic' }}>Sem informações de contato</span>
+                                        )}
+                                    </div>
 
                                     {client.address && (
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem', padding: '0 0.5rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1.25rem', padding: '0 0.5rem' }}>
                                             <MapPin size={16} style={{ color: '#6b7280', marginTop: '2px', flexShrink: 0 }} />
-                                            <span style={{ fontSize: '0.9rem', color: '#9ca3af', lineHeight: '1.4' }}>{client.address}</span>
+                                            <span style={{ fontSize: '0.9rem', color: '#9ca3af', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                                {client.address}
+                                            </span>
                                         </div>
                                     )}
 
                                     <div style={{ display: 'flex', gap: '0.75rem' }}>
                                         <Button
                                             onClick={() => router.push(`/dashboard/clients/${client.id}`)}
-                                            style={{ flex: 1, height: '40px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                            style={{ flex: 1, height: '40px', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.15)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 600, fontSize: '0.9rem' }}
                                         >
                                             <Edit size={16} /> Editar
                                         </Button>
                                         <Button
-                                            onClick={() => handleDelete(client.id)}
-                                            style={{ flex: 1, height: '40px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                            onClick={() => {
+                                                setClientToDelete(client);
+                                                setShowDeleteModal(true);
+                                            }}
+                                            style={{ flex: 1, height: '40px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.15)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontWeight: 600, fontSize: '0.9rem' }}
                                         >
                                             <Trash2 size={16} /> Excluir
                                         </Button>
@@ -273,8 +334,6 @@ export default function ClientsPage() {
                             ))}
                         </div>
                     </div>
-
-
 
                     {filteredClients.length === 0 && (
                         <div style={{ padding: '4rem', textAlign: 'center' }}>
@@ -289,6 +348,70 @@ export default function ClientsPage() {
                             </Link>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Custom Premium Delete Modal */}
+            {showDeleteModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '1.5rem', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
+                    animation: 'fadeIn 0.2s ease-out'
+                }} onClick={() => !isDeleting && setShowDeleteModal(false)}>
+                    <div style={{
+                        ...glassStyle,
+                        maxWidth: '450px', width: '100%', padding: '2rem',
+                        background: 'rgba(20, 20, 25, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', position: 'relative',
+                        animation: 'scaleIn 0.3s cubic-bezier(0.165, 0.84, 0.44, 1)'
+                    }} onClick={e => e.stopPropagation()}>
+                        
+                        <button 
+                            onClick={() => setShowDeleteModal(false)}
+                            style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer' }}
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div style={{
+                            width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', color: '#ef4444'
+                        }}>
+                            <Trash2 size={24} />
+                        </div>
+                        
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.75rem' }}>
+                            Excluir Cliente?
+                        </h3>
+                        
+                        <p style={{ color: '#9ca3af', lineHeight: 1.5, marginBottom: '2rem' }}>
+                            Você está prestes a excluir o cliente <strong style={{color: 'white'}}>"{clientToDelete?.name}"</strong>. 
+                            Isso removerá o cliente da listagem ativa, mas manterá o histórico de vendas seguro.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <Button
+                                disabled={isDeleting}
+                                onClick={() => setShowDeleteModal(false)}
+                                variant="ghost"
+                                style={{ flex: 1, border: '1px solid rgba(255,255,255,0.05)', color: '#9ca3af' }}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                disabled={isDeleting}
+                                onClick={handleDelete}
+                                style={{
+                                    flex: 1, 
+                                    background: '#ef4444',
+                                    border: 'none', color: 'white', fontWeight: 700,
+                                }}
+                            >
+                                {isDeleting ? <Loader2 className="animate-spin" size={20} /> : "Excluir Agora"}
+                            </Button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

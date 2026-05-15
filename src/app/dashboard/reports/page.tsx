@@ -29,8 +29,11 @@ import {
     AreaChart,
     Area,
     ComposedChart,
-    Line
+    Line,
+    LineChart
 } from "recharts";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 // Types
 interface ReportSale {
@@ -69,6 +72,15 @@ interface ReportEmployee {
     total_commission: number;
 }
 
+interface CompanySettings {
+    name: string;
+    cnpj: string;
+    email: string;
+    phone: string;
+    address: string;
+    logo_url: string;
+}
+
 interface ChartData {
     name: string; // Date or Label
     fullDate?: string;
@@ -95,6 +107,7 @@ export default function ReportsPage() {
     const [stockData, setStockData] = useState<ReportStock[]>([]);
     const [employeeData, setEmployeeData] = useState<ReportEmployee[]>([]);
     const [chartData, setChartData] = useState<ChartData[]>([]);
+    const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
 
     // Summary
     const [summary, setSummary] = useState({ label: '', value: '' });
@@ -133,8 +146,18 @@ export default function ReportsPage() {
     });
 
     useEffect(() => {
+        fetchCompanySettings();
         fetchReportData();
     }, [reportType, startDate, endDate]);
+
+    const fetchCompanySettings = async () => {
+        try {
+            const { data, error } = await supabase.from('company_settings').select('*').single();
+            if (data) setCompanySettings(data);
+        } catch (error) {
+            console.error("Error fetching company settings:", error);
+        }
+    };
 
     const fetchReportData = async () => {
         setLoading(true);
@@ -160,7 +183,7 @@ export default function ReportsPage() {
                     total_amount: s.total_amount,
                     payment_method: s.payment_method,
                     status: s.status,
-                    client_name: s.clients?.name || 'Cliente Não Identificado'
+                    client_name: s.clients?.name || s.customer_name || 'Cliente Balcão'
                 }));
                 setSalesData(formatted);
 
@@ -388,39 +411,148 @@ export default function ReportsPage() {
         }
     };
 
-    const handleExportCSV = () => {
-        let csvContent = "data:text/csv;charset=utf-8,";
+    const handleExportPDF = async () => {
+        const doc = new jsPDF();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        
+        // Helper to load image
+        const loadImage = (url: string): Promise<string> => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = reject;
+                img.src = url;
+            });
+        };
 
-        if (reportType === 'SALES') {
-            csvContent += "ID,Data,Cliente,Valor,Pagamento,Status\n";
-            salesData.forEach(row => {
-                csvContent += `${row.id},${format(new Date(row.created_at), 'dd/MM/yyyy HH:mm')},${row.client_name},${row.total_amount.toFixed(2)},${row.payment_method},${row.status}\n`;
+        // 1. Header (Company Data)
+        let headerY = 20;
+        if (companySettings) {
+            if (companySettings.logo_url) {
+                try {
+                    const logoData = await loadImage(companySettings.logo_url);
+                    doc.addImage(logoData, 'PNG', 15, 10, 30, 30);
+                    headerY = 20; // Text starts after logo top but aligned
+                } catch (e) {
+                    console.error("Error loading logo for PDF:", e);
+                }
+            }
+
+            doc.setFontSize(18);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0);
+            doc.text(companySettings.name.toUpperCase(), companySettings.logo_url ? 50 : pageWidth / 2, 20, { align: companySettings.logo_url ? "left" : "center" });
+            
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(100);
+            const headerEntries = [
+                companySettings.cnpj ? `CNPJ: ${companySettings.cnpj}` : "",
+                companySettings.address || "",
+                `${companySettings.phone || ""} | ${companySettings.email || ""}`
+            ].filter(Boolean);
+            
+            headerEntries.forEach((line, i) => {
+                doc.text(line, companySettings.logo_url ? 50 : pageWidth / 2, 26 + (i * 4), { align: companySettings.logo_url ? "left" : "center" });
             });
-        } else if (['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType)) {
-            csvContent += "Data,Descrição,Categoria,Tipo,Valor,Origem\n";
-            financialData.forEach(row => {
-                const dateClean = row.date.includes('T') ? row.date.split('T')[0] : row.date;
-                csvContent += `${format(parseISO(dateClean), 'dd/MM/yyyy')},${row.description},${row.category},${row.type === 'INCOME' ? 'Receita' : 'Despesa'},${row.amount.toFixed(2)},${row.source}\n`;
-            });
-        } else if (reportType === 'STOCK') {
-            csvContent += "Produto,Tamanho,Qtd Vendida,Receita Total,Estoque Atual\n";
-            stockData.forEach(row => {
-                csvContent += `${row.name},${row.size},${row.quantity_sold},${row.total_revenue.toFixed(2)},${row.current_stock}\n`;
-            });
-        } else if (reportType === 'EMPLOYEES') {
-            csvContent += "Funcionário,Qtd Vendas,Total Vendas,Comissão\n";
-            employeeData.forEach(row => {
-                csvContent += `${row.name},${row.sales_count},${row.total_sales.toFixed(2)},${row.total_commission.toFixed(2)}\n`;
-            });
+        } else {
+            doc.setFontSize(22);
+            doc.text("NODE COMPANY", pageWidth / 2, 20, { align: "center" });
         }
 
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", `relatorio_${reportType.toLowerCase()}_${format(new Date(), 'yyyyMMdd')}.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        doc.setDrawColor(200);
+        doc.line(15, 45, pageWidth - 15, 45);
+
+        // 2. Report Title & Info
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0);
+        const titleMap = {
+            SALES: "Relatório de Vendas",
+            FINANCIAL: "Relatório Financeiro",
+            CASH: "Relatório de Fluxo de Caixa",
+            PROFIT: "Relatório de Lucros e Resultados",
+            STOCK: "Relatório de Estoque / Curva ABC",
+            EMPLOYEES: "Relatório de Desempenho de Equipe"
+        };
+        doc.text(titleMap[reportType], 15, 55);
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Período: ${format(parseISO(startDate), 'dd/MM/yyyy')} até ${format(parseISO(endDate), 'dd/MM/yyyy')}`, 15, 62);
+        doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, pageWidth - 15, 62, { align: "right" });
+
+        // 3. Table Content
+        let columns: string[] = [];
+        let rows: any[] = [];
+
+        if (reportType === 'SALES') {
+            columns = ["Data", "Cliente", "Pagamento", "Valor"];
+            rows = salesData.map(row => [
+                format(new Date(row.created_at), 'dd/MM/yyyy HH:mm'),
+                row.client_name,
+                row.payment_method,
+                `R$ ${row.total_amount.toFixed(2)}`
+            ]);
+        } else if (['FINANCIAL', 'CASH', 'PROFIT'].includes(reportType)) {
+            columns = ["Data", "Descrição", "Categoria", "Tipo", "Valor"];
+            rows = financialData.map(row => {
+                const dateClean = row.date.includes('T') ? row.date.split('T')[0] : row.date;
+                return [
+                    format(parseISO(dateClean), 'dd/MM/yyyy'),
+                    row.description,
+                    row.category,
+                    row.type === 'INCOME' ? 'Receita' : 'Despesa',
+                    `R$ ${row.amount.toFixed(2)}`
+                ];
+            });
+        } else if (reportType === 'STOCK') {
+            columns = ["Produto", "Tam.", "Vendidos", "Receita", "Estoque"];
+            rows = stockData.map(row => [
+                row.name,
+                row.size,
+                row.quantity_sold,
+                `R$ ${row.total_revenue.toFixed(2)}`,
+                row.current_stock
+            ]);
+        } else if (reportType === 'EMPLOYEES') {
+            columns = ["Funcionário", "Qtd Vendas", "Total", "Comissão"];
+            rows = employeeData.map(row => [
+                row.name,
+                row.sales_count,
+                `R$ ${row.total_sales.toFixed(2)}`,
+                `R$ ${row.total_commission.toFixed(2)}`
+            ]);
+        }
+
+        autoTable(doc, {
+            head: [columns],
+            body: rows,
+            startY: 70,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9, cellPadding: 3 },
+            alternateRowStyles: { fillColor: [245, 245, 245] },
+            didDrawPage: (data) => {
+                // 4. Footer (App Branding)
+                doc.setFontSize(8);
+                doc.setTextColor(150);
+                const footerText = "Nexus by NodeCompany | Suporte: @NodeCompany";
+                doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: "center" });
+                doc.text(`Página ${data.pageNumber}`, pageWidth - 15, pageHeight - 10, { align: "right" });
+            }
+        });
+
+        doc.save(`relatorio_${reportType.toLowerCase()}_${format(new Date(), 'yyyyMMdd')}.pdf`);
     };
 
     return (
@@ -434,15 +566,15 @@ export default function ReportsPage() {
                     <p style={{ color: '#9ca3af', marginTop: '0.25rem' }}>Análise detalhada de performance.</p>
                 </div>
                 <button
-                    onClick={handleExportCSV}
+                    onClick={handleExportPDF}
                     style={{
-                        background: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px',
+                        background: '#34d399', color: 'black', border: 'none', borderRadius: '8px',
                         padding: '10px 16px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
-                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                        boxShadow: '0 4px 12px rgba(52, 211, 153, 0.3)',
                         flexShrink: 0
                     }}
                 >
-                    <Download size={18} /> <span className="desktop-only">Exportar CSV</span><span className="mobile-only">CSV</span>
+                    <Download size={18} /> <span className="desktop-only">Exportar PDF</span><span className="mobile-only">PDF</span>
                 </button>
             </div>
 

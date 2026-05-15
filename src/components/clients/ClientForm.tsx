@@ -100,9 +100,22 @@ export function ClientForm({ initialData, isEdit = false }: ClientFormProps) {
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.5s ease', padding: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            animation: 'fadeIn 0.5s ease',
+            padding: '1rem',
+            // @ts-ignore
+            '--panel-padding': '2rem'
+        }}>
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    form { --panel-padding: 1.25rem !important; }
+                }
+            `}</style>
+
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Link href="/dashboard/clients">
                         <Button variant="ghost" size="sm" type="button" style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -110,31 +123,31 @@ export function ClientForm({ initialData, isEdit = false }: ClientFormProps) {
                         </Button>
                     </Link>
                     <div>
-                        <h1 style={{ fontSize: '1.875rem', fontWeight: 700, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                        <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                             {isEdit ? "Editar Cliente" : "Novo Cliente"}
                         </h1>
                         <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-                            Gerencie as informações dos seus clientes.
+                            Gerencie detalhes e contatos com facilidade.
                         </p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <Link href="/dashboard/clients">
+                <div style={{ display: 'flex', gap: '0.75rem', width: '100%', maxWidth: '300px', flex: '1 1 auto', justifyContent: 'flex-end' }}>
+                    <Link href="/dashboard/clients" className="mobile-hidden">
                         <Button variant="ghost" type="button" style={{ color: '#9ca3af' }}>Cancelar</Button>
                     </Link>
-                    <Button type="submit" disabled={loading} style={{ minWidth: '140px', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))' }}>
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18} style={{ marginRight: '0.5rem' }} /> Salvar</>}
+                    <Button type="submit" disabled={loading} style={{ flex: 1, minWidth: '140px', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))', height: '48px', fontWeight: 600 }}>
+                        {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18} style={{ marginRight: '0.5rem' }} /> {isEdit ? "Atualizar" : "Salvar"}</>}
                     </Button>
                 </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '2rem', flexDirection: 'row', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', flexDirection: 'column' }}>
 
-                {/* Main Column */}
-                <div style={{ flex: '2', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* Main Content Sections */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                     {/* Basic Info Panel */}
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
                             <User size={18} style={{ color: 'var(--color-primary)' }} /> Dados Pessoais
                         </h3>
@@ -153,12 +166,13 @@ export function ClientForm({ initialData, isEdit = false }: ClientFormProps) {
                             </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
                             <div>
                                 <label style={labelStyle}>CPF / CNPJ</label>
                                 <div style={{ position: 'relative' }}>
                                     <input
                                         type="text"
+                                        inputMode="numeric"
                                         style={{ ...inputStyle, paddingLeft: '3rem' }}
                                         value={formData.document}
                                         onChange={(e) => setFormData({ ...formData, document: e.target.value })}
@@ -171,7 +185,8 @@ export function ClientForm({ initialData, isEdit = false }: ClientFormProps) {
                                 <label style={labelStyle}>Telefone / WhatsApp</label>
                                 <div style={{ position: 'relative' }}>
                                     <input
-                                        type="text"
+                                        type="tel"
+                                        inputMode="tel"
                                         style={{ ...inputStyle, paddingLeft: '3rem' }}
                                         value={formData.phone}
                                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -187,6 +202,7 @@ export function ClientForm({ initialData, isEdit = false }: ClientFormProps) {
                             <div style={{ position: 'relative' }}>
                                 <input
                                     type="email"
+                                    inputMode="email"
                                     style={{ ...inputStyle, paddingLeft: '3rem' }}
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -197,7 +213,8 @@ export function ClientForm({ initialData, isEdit = false }: ClientFormProps) {
                         </div>
                     </div>
 
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {/* Additional Info Panel */}
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
                             <FileText size={18} style={{ color: 'var(--color-accent)' }} /> Informações Adicionais
                         </h3>

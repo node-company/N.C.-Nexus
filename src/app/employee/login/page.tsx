@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { Users, ArrowRight, Lock, Briefcase } from "lucide-react";
+import { Users, ArrowRight, ArrowLeft, Lock, Briefcase } from "lucide-react";
 
 export default function EmployeeLoginPage() {
     const [loading, setLoading] = useState(false);
@@ -99,6 +99,26 @@ export default function EmployeeLoginPage() {
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                 }}
             >
+                <Link
+                    href="/"
+                    style={{
+                        position: 'absolute',
+                        top: '1.5rem',
+                        left: '1.5rem',
+                        color: '#d1fae5',
+                        opacity: 0.6,
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.85rem',
+                        transition: 'opacity 0.2s'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.6')}
+                >
+                    <ArrowLeft size={16} /> Voltar ao Início
+                </Link>
                 <div style={{ textAlign: 'center' }}>
                     <div style={{
                         display: 'flex',

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { Building2, ArrowRight, Lock, Mail } from "lucide-react";
+import { Building2, ArrowRight, ArrowLeft, Lock, Mail } from "lucide-react";
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
@@ -89,6 +89,25 @@ export default function LoginPage() {
                     boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                 }}
             >
+                <Link
+                    href="/"
+                    style={{
+                        position: 'absolute',
+                        top: '1.5rem',
+                        left: '1.5rem',
+                        color: '#94a3b8',
+                        textDecoration: 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        fontSize: '0.85rem',
+                        transition: 'color 0.2s'
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#fff')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = '#94a3b8')}
+                >
+                    <ArrowLeft size={16} /> Voltar ao Início
+                </Link>
                 <div style={{ textAlign: 'center' }}>
                     <div style={{
                         display: 'flex',

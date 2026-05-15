@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Save, Loader2, Image as ImageIcon, DollarSign, Package, FileText, Tag, Truck, Ruler, X, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ImageUpload } from "@/components/ui/ImageUpload";
+import { PricingCalculator } from "@/components/calculator/PricingCalculator";
+import { Calculator } from "lucide-react";
 
 interface ProductVariant {
     id?: string;
@@ -34,6 +36,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
     const router = useRouter();
     const supabase = createClient();
     const [loading, setLoading] = useState(false);
+    const [showCalculator, setShowCalculator] = useState(false);
 
     // Form States
     const [formData, setFormData] = useState({
@@ -55,6 +58,26 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
     // Inputs temporários para adicionar nova variante
     const [newVariantSize, setNewVariantSize] = useState("");
     const [newVariantStock, setNewVariantStock] = useState(0);
+
+    // Suggestions States
+    const [existingCategories, setExistingCategories] = useState<string[]>([]);
+    const [existingSuppliers, setExistingSuppliers] = useState<string[]>([]);
+
+    useEffect(() => {
+        const fetchSuggestions = async () => {
+            const { data: products } = await supabase
+                .from("products")
+                .select("category, supplier");
+
+            if (products) {
+                const cats = Array.from(new Set(products.map(p => p.category).filter(Boolean))) as string[];
+                const sups = Array.from(new Set(products.map(p => p.supplier).filter(Boolean))) as string[];
+                setExistingCategories(cats.sort());
+                setExistingSuppliers(sups.sort());
+            }
+        };
+        fetchSuggestions();
+    }, [supabase]);
 
     // Se estiver editando, precisaria buscar as variantes. 
     // Como simplificação inicial no frontend, se não houver lógica de fetch variants implemented, 
@@ -129,15 +152,21 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Usuário não autenticado");
 
-            // Validação básica
-            if (isNaN(formData.price) || formData.price < 0) throw new Error("Preço inválido");
-            if (isNaN(formData.cost_price!) || (formData.cost_price || 0) < 0) throw new Error("Custo inválido");
+            // Validação rigorosa
+            if (!formData.name.trim()) throw new Error("O nome do produto é obrigatório");
+            
+            const finalPrice = Number(formData.price);
+            const finalCost = Number(formData.cost_price);
+
+            if (isNaN(finalPrice) || finalPrice < 0) throw new Error("Preço de venda inválido");
+            if (isNaN(finalCost) || finalCost < 0) throw new Error("Preço de custo inválido");
 
             // 1. Salva/Atualiza Produto Pai
             const productData = {
                 ...formData,
-                price: formData.price || 0,
-                cost_price: formData.cost_price || 0,
+                name: formData.name.trim(),
+                price: finalPrice,
+                cost_price: finalCost,
                 user_id: user.id,
                 stock_quantity: totalStock,
             };
@@ -167,7 +196,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
             // Buscar variantes existentes no banco para comparar
             const { data: existingVariants } = await supabase
                 .from("product_variants")
-                .select("id")
+                .select("id, stock_quantity")
                 .eq("product_id", productId);
 
             const existingIds = existingVariants?.map(v => v.id) || [];
@@ -183,11 +212,9 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
                 if (deleteError) {
                     console.error("Erro ao deletar variantes antigas (provavelmente já movimentadas):", deleteError);
-                    // Opcional: Avisar usuario ou ignorar se for constraint. 
-                    // Se falhar, elas continuam lá. Ideal seria soft-delete ou bloquear.
-                    // Vamos lançar apenas se não for violação de FK, ou lançar warning.
-                    // Por enquanto, throw para ver o erro se for grave, ou alert.
-                    // throw deleteError; 
+                    // Se falhar por constraint de histórico, vamos apenas logar e permitir o fluxo continuar 
+                    // (as variantes órfãs ficarão no banco mas não aparecerão no form).
+                    // Idealmente o ON DELETE CASCADE resolverá isso após o script SQL ser aplicado.
                 }
             }
 
@@ -211,6 +238,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
             }
 
             // B2. Inserts
+            const insertedVariants = [];
             if (variantsToInsert.length > 0) {
                 const toInsert = variantsToInsert.map(v => ({
                     product_id: productId,
@@ -218,10 +246,70 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                     size: v.size,
                     stock_quantity: v.stock_quantity
                 }));
-                const { error: insertError } = await supabase
+                const { data: insertedData, error: insertError } = await supabase
                     .from("product_variants")
-                    .insert(toInsert);
+                    .insert(toInsert)
+                    .select();
                 if (insertError) throw insertError;
+                if (insertedData) insertedVariants.push(...insertedData);
+            }
+
+            // --- STOCK MOVEMENT LOGGING ---
+            
+            // 1. Log New Variants with initial stock
+            if (!isEdit) {
+                // Ao criar produto novo, logamos todas as variantes que começam com estoque
+                const logs = variants.filter(v => v.stock_quantity > 0).map(v => {
+                    // Encontrar o ID gerado para essa variante (baseado no tamanho)
+                    const matched = insertedVariants.find(iv => iv.size === v.size);
+                    return {
+                        user_id: user.id,
+                        product_id: productId,
+                        variant_id: matched?.id || null,
+                        type: 'IN',
+                        quantity: v.stock_quantity,
+                        reason: "Estoque Inicial (Cadastro)"
+                    };
+                });
+                if (logs.length > 0) {
+                    await supabase.from("inventory_movements").insert(logs);
+                }
+            } else {
+                // Ao editar, comparamos quem mudou (Apenas para variantes existentes que foram editadas)
+                // Nota: Inserções de novas variantes em produto editado também devem ser logadas
+                const logs = [];
+
+                // Logs para novas variantes adicionadas durante a edição
+                insertedVariants.filter(iv => iv.stock_quantity > 0).forEach(iv => {
+                    logs.push({
+                        user_id: user.id,
+                        product_id: productId,
+                        variant_id: iv.id,
+                        type: 'IN',
+                        quantity: iv.stock_quantity,
+                        reason: "Estoque Inicial (Nova Variante)"
+                    });
+                });
+
+                // Logs para variantes existentes que tiveram alteração na quantidade
+                for (const v of variantsToUpdate) {
+                    const original = existingVariants?.find(ev => ev.id === v.id);
+                    if (original && original.stock_quantity !== v.stock_quantity) {
+                        const diff = v.stock_quantity - original.stock_quantity;
+                        logs.push({
+                            user_id: user.id,
+                            product_id: productId,
+                            variant_id: v.id,
+                            type: diff > 0 ? 'IN' : 'OUT',
+                            quantity: Math.abs(diff),
+                            reason: "Ajuste via Formulário de Produto"
+                        });
+                    }
+                }
+
+                if (logs.length > 0) {
+                    await supabase.from("inventory_movements").insert(logs);
+                }
             }
 
             // 3. Integração Financeira (Estoque Inicial)
@@ -295,10 +383,29 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
         marginBottom: '0.5rem'
     };
 
+    const glassStyle = {
+        background: 'rgba(255, 255, 255, 0.03)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(12px)',
+        borderRadius: '16px',
+    };
+
     return (
-        <form onSubmit={handleSubmit} style={{ maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.5s ease', padding: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            animation: 'fadeIn 0.5s ease',
+            padding: '1rem',
+            // @ts-ignore
+            '--panel-padding': '2rem'
+        }}>
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    form { --panel-padding: 1.25rem !important; }
+                }
+            `}</style>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Link href="/dashboard/products">
                         <Button variant="ghost" size="sm" type="button" style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -306,7 +413,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                         </Button>
                     </Link>
                     <div>
-                        <h1 style={{ fontSize: '1.875rem', fontWeight: 700, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                        <h1 className="responsive-title" style={{ fontWeight: 700, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                             {isEdit ? "Editar Produto" : "Novo Produto"}
                         </h1>
                         <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.25rem' }}>
@@ -314,11 +421,11 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                         </p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <Link href="/dashboard/products">
+                <div style={{ display: 'flex', gap: '0.75rem', width: '100%', maxWidth: '300px', flex: '1 1 auto', justifyContent: 'flex-end' }}>
+                    <Link href="/dashboard/products" className="mobile-hidden">
                         <Button variant="ghost" type="button" style={{ color: '#9ca3af' }}>Cancelar</Button>
                     </Link>
-                    <Button type="submit" disabled={loading} style={{ minWidth: '140px', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))' }}>
+                    <Button type="submit" disabled={loading} style={{ flex: 1, minWidth: '140px', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))', height: '48px' }}>
                         {loading ? <Loader2 className="animate-spin" size={20} /> : <><Save size={18} style={{ marginRight: '0.5rem' }} /> Salvar</>}
                     </Button>
                 </div>
@@ -331,13 +438,13 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                 </div>
             )}
 
-            <div style={{ display: 'flex', gap: '2rem', flexDirection: 'row', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '1.5rem', flexDirection: 'column' }}>
 
                 {/* Main Column */}
                 <div style={{ flex: '2', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                     {/* Basic Info Panel */}
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
                             <Tag size={18} style={{ color: 'var(--color-primary)' }} /> Identificação
                         </h3>
@@ -356,7 +463,7 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                             </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
                             <div>
                                 <label style={labelStyle}>Categoria</label>
                                 <input
@@ -368,9 +475,9 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                                     list="categories"
                                 />
                                 <datalist id="categories">
-                                    <option value="Roupas" />
-                                    <option value="Calçados" />
-                                    <option value="Acessórios" />
+                                    {existingCategories.map(cat => (
+                                        <option key={cat} value={cat} />
+                                    ))}
                                 </datalist>
                             </div>
                             <div>
@@ -382,7 +489,13 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                                         value={formData.supplier}
                                         onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
                                         placeholder="Nome do Fornecedor"
+                                        list="suppliers"
                                     />
+                                    <datalist id="suppliers">
+                                        {existingSuppliers.map(sup => (
+                                            <option key={sup} value={sup} />
+                                        ))}
+                                    </datalist>
                                     <Truck style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'gray' }} size={18} />
                                 </div>
                             </div>
@@ -404,10 +517,10 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                     </div>
 
                     {/* Inventory By Size Panel */}
-                    <div className="glass-panel" style={{ padding: '2rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '0.5rem' }}>
                             <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                                <Ruler size={18} style={{ color: 'var(--color-accent)' }} /> Estoque por Tamanho/Variação
+                                <Ruler size={18} style={{ color: 'var(--color-accent)' }} /> Estoque por Tamanho
                             </h3>
                             <span style={{ fontSize: '0.875rem', color: 'gray' }}>
                                 Total: <strong style={{ color: 'white' }}>{totalStock}</strong> un
@@ -415,8 +528,8 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                         </div>
 
                         {/* Add Variant Inputs */}
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px' }}>
-                            <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', flexWrap: 'wrap' }}>
+                            <div style={{ flex: '1 1 150px' }}>
                                 <label style={labelStyle}>Tamanho/Variação</label>
                                 <input
                                     id="variant-size-input"
@@ -433,11 +546,12 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                                     }}
                                 />
                             </div>
-                            <div style={{ width: '120px' }}>
+                            <div style={{ flex: '1 1 100px' }}>
                                 <label style={labelStyle}>Qtde</label>
                                 <input
                                     type="number"
                                     min="0"
+                                    inputMode="numeric"
                                     value={newVariantStock}
                                     onChange={(e) => setNewVariantStock(parseInt(e.target.value) || 0)}
                                     style={{ ...inputStyle, padding: '12px' }}
@@ -449,47 +563,76 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                                     }}
                                 />
                             </div>
-                            <Button type="button" onClick={handleAddVariant} size="icon" style={{ height: '48px', width: '48px', background: 'rgba(255,255,255,0.1)', flexShrink: 0 }}>
-                                <Plus size={20} />
+                            <Button type="button" onClick={handleAddVariant} style={{ height: '48px', flex: '1 1 100%', maxWidth: 'none', background: 'rgba(255,255,255,0.1)', fontWeight: 700 }}>
+                                <Plus size={20} style={{ marginRight: '0.5rem' }} /> Adicionar
                             </Button>
                         </div>
 
                         {/* Variants List */}
                         {variants.length > 0 ? (
-                            <div style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden' }}>
-                                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                                    <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
-                                        <tr>
-                                            <th style={{ padding: '12px', textAlign: 'left', color: 'gray', fontSize: '0.75rem', textTransform: 'uppercase' }}>Tamanho</th>
-                                            <th style={{ padding: '12px', textAlign: 'center', color: 'gray', fontSize: '0.75rem', textTransform: 'uppercase' }}>Estoque</th>
-                                            <th style={{ padding: '12px', textAlign: 'right', color: 'gray', fontSize: '0.75rem', textTransform: 'uppercase' }}>Ação</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {variants.map((v, idx) => (
-                                            <tr key={idx} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                                <td style={{ padding: '12px', fontWeight: 600, color: 'white' }}>{v.size}</td>
-                                                <td style={{ padding: '12px', textAlign: 'center', color: '#a7f3d0' }}>{v.stock_quantity}</td>
-                                                <td style={{ padding: '12px', textAlign: 'right' }}>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => removeVariant(idx)}
-                                                        style={{ color: '#ef4444', height: '32px', width: '32px', padding: 0 }}
-                                                    >
-                                                        <Trash2 size={16} /> {/* Nota: Trash2 precisa ser importado ou usar X */}
-                                                        <X size={16} />
-                                                    </Button>
-                                                </td>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <div className="desktop-only" style={{ border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', overflow: 'hidden' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead style={{ background: 'rgba(255,255,255,0.05)' }}>
+                                            <tr>
+                                                <th style={{ padding: '12px', textAlign: 'left', color: 'gray', fontSize: '0.75rem', textTransform: 'uppercase' }}>Tamanho</th>
+                                                <th style={{ padding: '12px', textAlign: 'center', color: 'gray', fontSize: '0.75rem', textTransform: 'uppercase' }}>Estoque</th>
+                                                <th style={{ padding: '12px', textAlign: 'right', color: 'gray', fontSize: '0.75rem', textTransform: 'uppercase' }}>Ação</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {variants.map((v, idx) => (
+                                                <tr key={idx} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <td style={{ padding: '12px', fontWeight: 600, color: 'white' }}>{v.size}</td>
+                                                    <td style={{ padding: '12px', textAlign: 'center', color: '#a7f3d0' }}>{v.stock_quantity}</td>
+                                                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => removeVariant(idx)}
+                                                            style={{ color: '#ef4444', height: '32px', width: '32px', padding: 0 }}
+                                                        >
+                                                            <X size={16} />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    {variants.map((v, idx) => (
+                                        <div key={idx} style={{
+                                            ...glassStyle,
+                                            background: 'rgba(255,255,255,0.02)',
+                                            padding: '0.75rem 1rem',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            borderRadius: '12px',
+                                            border: '1px solid rgba(255,255,255,0.08)'
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '8px', color: 'white', fontWeight: 800 }}>{v.size}</div>
+                                                <span style={{ color: '#a7f3d0', fontWeight: 600, fontSize: '0.95rem' }}>{v.stock_quantity} <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>un</span></span>
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => removeVariant(idx)}
+                                                style={{ color: '#ef4444', padding: '8px', height: 'auto' }}
+                                            >
+                                                <Trash2 size={18} />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         ) : (
                             <p style={{ textAlign: 'center', color: 'gray', fontSize: '0.875rem', fontStyle: 'italic', padding: '1rem' }}>
-                                Nenhuma variação adicionada. Adicione acima (ex: Tamanho P, Qtde 10).
+                                Nenhuma variação adicionada.
                             </p>
                         )}
                     </div>
@@ -497,10 +640,10 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                 </div>
 
                 {/* Right Column: Pricing & Media */}
-                <div style={{ flex: '1', minWidth: '300px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ flex: '1', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                     {/* Media Panel */}
-                    <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
                             <ImageIcon size={18} style={{ color: 'var(--color-secondary)' }} /> Imagem
                         </h3>
@@ -517,54 +660,78 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
                     </div>
 
                     {/* Pricing Panel */}
-                    <div className="glass-panel" style={{ padding: '1.5rem', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0 }}>
-                            <DollarSign size={18} style={{ color: '#10b981' }} /> Financeiro
-                        </h3>
-
-                        <div>
-                            <label style={labelStyle}>Custo Unitário</label>
-                            <div style={{ position: 'relative' }}>
-                                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'gray', fontWeight: 600 }}>R$</div>
-                                <input
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    style={{ ...inputStyle, paddingLeft: '3rem' }}
-                                    value={formData.cost_price}
-                                    onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) })}
-                                />
-                            </div>
+                    <div className="glass-panel" style={{ padding: 'var(--panel-padding, 1.5rem)', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', margin: 0, flexWrap: 'wrap', gap: '0.75rem' }}>
+                            <h3 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                                <DollarSign size={18} style={{ color: '#10b981' }} /> Financeiro
+                            </h3>
+                            <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => setShowCalculator(true)} 
+                                style={{ 
+                                    fontSize: '0.8rem', 
+                                    height: '36px', 
+                                    background: 'rgba(52, 211, 153, 0.1)', 
+                                    color: '#34d399', 
+                                    border: '1px solid rgba(16, 185, 129, 0.2)',
+                                    borderRadius: '8px',
+                                    padding: '0 12px',
+                                    fontWeight: 600
+                                }}
+                            >
+                                <Calculator size={16} style={{ marginRight: '0.5rem' }} /> Calcular Preço Ideal
+                            </Button>
                         </div>
 
-                        <div>
-                            <label style={labelStyle}>Preço de Venda</label>
-                            <div style={{ position: 'relative' }}>
-                                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontWeight: 600 }}>R$</div>
-                                <input
-                                    required
-                                    type="number"
-                                    step="0.01"
-                                    min="0"
-                                    style={{ ...inputStyle, paddingLeft: '3rem', fontFamily: 'monospace', fontSize: '1.25rem', borderColor: '#10b981' }}
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                                />
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                            <div>
+                                <label style={labelStyle}>Custo Unitário</label>
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'gray', fontWeight: 600 }}>R$</div>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        inputMode="decimal"
+                                        style={{ ...inputStyle, paddingLeft: '3rem' }}
+                                        value={formData.cost_price}
+                                        onChange={(e) => setFormData({ ...formData, cost_price: parseFloat(e.target.value) })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label style={labelStyle}>Preço de Venda</label>
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontWeight: 600 }}>R$</div>
+                                    <input
+                                        required
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        inputMode="decimal"
+                                        style={{ ...inputStyle, paddingLeft: '3rem', fontFamily: 'monospace', fontSize: '1.15rem', borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                                        value={formData.price}
+                                        onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                                    />
+                                </div>
                             </div>
                         </div>
 
                         {/* Profit Helper */}
                         {(formData.price > 0 && formData.cost_price > 0) && (
-                            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                    <span style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>Lucro Estimado:</span>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#34d399' }}>
+                            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                    <span style={{ fontSize: '0.75rem', color: '#a7f3d0', fontWeight: 600 }}>Lucro Estimado:</span>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399' }}>
                                         R$ {(formData.price - formData.cost_price).toFixed(2)}
                                     </span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ fontSize: '0.75rem', color: '#a7f3d0' }}>Margem:</span>
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700, color: '#34d399' }}>
+                                    <span style={{ fontSize: '0.75rem', color: '#a7f3d0', fontWeight: 600 }}>Margem:</span>
+                                    <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399' }}>
                                         {(((formData.price - formData.cost_price) / formData.price) * 100).toFixed(1)}%
                                     </span>
                                 </div>
@@ -574,6 +741,28 @@ export function ProductForm({ initialData, isEdit = false }: ProductFormProps) {
 
                 </div>
             </div>
+
+            {/* Modal Calculadora */}
+            {showCalculator && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
+                    zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '1rem'
+                }}>
+                    <div style={{ background: '#111827', width: '100%', maxWidth: '1000px', maxHeight: '95vh', overflowY: 'auto', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <PricingCalculator
+                            isModal={true}
+                            initialProductCost={formData.cost_price}
+                            onClose={() => setShowCalculator(false)}
+                            onApplyPrice={(price, cost) => {
+                                setFormData(prev => ({ ...prev, price, cost_price: cost }));
+                                setShowCalculator(false);
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </form>
     );
 }

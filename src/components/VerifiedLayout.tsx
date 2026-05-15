@@ -13,7 +13,7 @@ export default async function VerifiedLayout({ children }: { children: ReactNode
     // 1. Check Company Settings for Subscription Status
     const { data: company } = await supabase
         .from("company_settings")
-        .select("subscription_status")
+        .select("subscription_status, stripe_customer_id")
         .eq("user_id", user.id)
         .single();
 
@@ -30,7 +30,11 @@ export default async function VerifiedLayout({ children }: { children: ReactNode
 
     // For this MVP step, let's implement the Owner Check:
     if (company) {
-        if (!['active', 'trialing'].includes(company.subscription_status || '')) {
+        // Enforce both status AND presence of Stripe ID (unless you have 100% manual overrides)
+        const hasValidStatus = ['active', 'trialing'].includes(company.subscription_status || '');
+        const hasStripeId = !!company.stripe_customer_id;
+
+        if (!hasValidStatus || !hasStripeId) {
             redirect("/subscription/pending");
         }
     } else {
@@ -41,17 +45,24 @@ export default async function VerifiedLayout({ children }: { children: ReactNode
         if (employee) {
             const { data: employerSettings } = await supabase
                 .from("company_settings")
-                .select("subscription_status")
-                .eq("user_id", employee.company_id) // Assuming employee.company_id links to the owner's Auth ID or Company ID. 
-                // Based on typical schema: company_id usually refers to the owner's uuid or a company uuid.
-                // If company_settings.user_id is the link, then `company_id` in employees should match it.
+                .select("subscription_status, stripe_customer_id")
+                .eq("user_id", employee.company_id)
                 .single();
 
             if (employerSettings) {
-                if (!['active', 'trialing'].includes(employerSettings.subscription_status || '')) {
+                const hasValidStatus = ['active', 'trialing'].includes(employerSettings.subscription_status || '');
+                const hasStripeId = !!employerSettings.stripe_customer_id;
+
+                if (!hasValidStatus || !hasStripeId) {
                     redirect("/subscription/pending");
                 }
+            } else {
+                // Not a valid company owner nor a valid employee
+                redirect("/subscription/pending");
             }
+        } else {
+            // No company settings and not an employee record found
+            redirect("/subscription/pending");
         }
     }
 

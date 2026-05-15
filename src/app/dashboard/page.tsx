@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
     TrendingUp,
     Users,
@@ -84,6 +85,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function DashboardPage() {
     const supabase = createClient();
     const router = useRouter();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<DashboardStats>({
         salesToday: { count: 0, value: 0 },
@@ -114,6 +116,8 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
+        if (!user) return;
+
         const fetchDashboardData = async () => {
             try {
                 const today = new Date();
@@ -125,6 +129,7 @@ export default function DashboardPage() {
                 const { data: salesTodayData } = await supabase
                     .from('sales')
                     .select('total_amount')
+                    .eq('user_id', user.id)
                     .gte('created_at', `${todayStr}T00:00:00`)
                     .lte('created_at', `${todayStr}T23:59:59`)
                     .eq('status', 'completed');
@@ -136,12 +141,16 @@ export default function DashboardPage() {
                 const { count: newClientsCount } = await supabase
                     .from('clients')
                     .select('*', { count: 'exact', head: true })
+                    .eq('user_id', user.id)
+                    .eq('active', true)
                     .gte('created_at', firstDayOfMonth);
 
                 // 3. Stock Items
                 const { data: products } = await supabase
                     .from('products')
-                    .select('id, name, stock_quantity, image_url, product_variants(stock_quantity)');
+                    .select('id, name, stock_quantity, image_url, product_variants(stock_quantity)')
+                    .eq('user_id', user.id)
+                    .eq('active', true);
 
                 let totalStock = 0;
                 const lowStockList: LowStockProduct[] = [];
@@ -161,10 +170,10 @@ export default function DashboardPage() {
                 });
 
                 // 4. Financial Balance (Total)
-                const { data: allSales } = await supabase.from('sales').select('total_amount').eq('status', 'completed');
+                const { data: allSales } = await supabase.from('sales').select('total_amount').eq('user_id', user.id).eq('status', 'completed');
                 const totalSalesRevenue = allSales?.reduce((acc, curr) => acc + curr.total_amount, 0) || 0;
 
-                const { data: allTransactions } = await supabase.from('transactions').select('amount, type');
+                const { data: allTransactions } = await supabase.from('transactions').select('amount, type').eq('user_id', user.id);
                 const totalExpenses = allTransactions?.filter(t => t.type === 'EXPENSE').reduce((acc, curr) => acc + curr.amount, 0) || 0;
                 const totalManualIncome = allTransactions?.filter(t => t.type === 'INCOME').reduce((acc, curr) => acc + curr.amount, 0) || 0;
                 const balance = (totalSalesRevenue + totalManualIncome) - totalExpenses;
@@ -173,12 +182,14 @@ export default function DashboardPage() {
                 const { data: periodSales } = await supabase
                     .from('sales')
                     .select('total_amount, created_at')
+                    .eq('user_id', user.id)
                     .eq('status', 'completed')
                     .gte('created_at', thirtyDaysAgo.toISOString());
 
                 const { data: periodTransactions } = await supabase
                     .from('transactions')
                     .select('amount, type, date') // transactions usam 'date' (YYYY-MM-DD) ou 'created_at' se date for null? Schema diz date default CURRENT_DATE
+                    .eq('user_id', user.id)
                     .gte('date', thirtyDaysAgo.toISOString().split('T')[0]);
 
                 // Generate map of dates
@@ -233,6 +244,7 @@ export default function DashboardPage() {
                 const { data: recentSalesData } = await supabase
                     .from('sales')
                     .select('id, total_amount, created_at, status')
+                    .eq('user_id', user.id)
                     .order('created_at', { ascending: false })
                     .limit(5);
 
@@ -248,7 +260,7 @@ export default function DashboardPage() {
         };
 
         fetchDashboardData();
-    }, []);
+    }, [user]);
 
     if (loading) {
         return <div style={{ padding: '2rem', color: '#9ca3af', textAlign: 'center' }}>Carregando visão geral...</div>;
@@ -266,76 +278,117 @@ export default function DashboardPage() {
                 </p>
             </div>
 
+            {/* QUICK ACCESS */}
+            <div style={{ marginBottom: "2.5rem" }}>
+                <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Briefcase size={16} />
+                    Ações Rápidas
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
+                    <button onClick={() => router.push('/dashboard/sales')} style={{ ...glassStyle, background: 'rgba(255, 255, 255, 0.06)', padding: '1.25rem', border: '1px solid rgba(52, 211, 153, 0.2)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 15px rgba(52, 211, 153, 0.05)' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(52, 211, 153, 0.5)'; e.currentTarget.style.background = 'rgba(52, 211, 153, 0.08)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(52, 211, 153, 0.15)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(52, 211, 153, 0.2)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(52, 211, 153, 0.05)'; }}>
+                        <div style={{ padding: '10px', background: 'rgba(52, 211, 153, 0.15)', borderRadius: '12px', color: '#34d399' }}>
+                            <ShoppingCart size={22} />
+                        </div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Nova Venda</span>
+                    </button>
+
+                    <button onClick={() => router.push('/dashboard/products/new')} style={{ ...glassStyle, background: 'rgba(255, 255, 255, 0.06)', padding: '1.25rem', border: '1px solid rgba(59, 130, 246, 0.2)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 15px rgba(59, 130, 246, 0.05)' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)'; e.currentTarget.style.background = 'rgba(59, 130, 246, 0.08)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.15)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.2)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(59, 130, 246, 0.05)'; }}>
+                        <div style={{ padding: '10px', background: 'rgba(59, 130, 246, 0.15)', borderRadius: '12px', color: '#3b82f6' }}>
+                            <Package size={22} />
+                        </div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Novo Produto</span>
+                    </button>
+
+                    <button onClick={() => router.push('/dashboard/clients')} style={{ ...glassStyle, background: 'rgba(255, 255, 255, 0.06)', padding: '1.25rem', border: '1px solid rgba(236, 72, 153, 0.2)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 15px rgba(236, 72, 153, 0.05)' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.4)'; e.currentTarget.style.background = 'rgba(236, 72, 153, 0.08)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(236, 72, 153, 0.15)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(236, 72, 153, 0.2)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(236, 72, 153, 0.05)'; }}>
+                        <div style={{ padding: '10px', background: 'rgba(236, 72, 153, 0.15)', borderRadius: '12px', color: '#ec4899' }}>
+                            <Users size={22} />
+                        </div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Novo Cliente</span>
+                    </button>
+
+                    <button onClick={() => router.push('/dashboard/financial')} style={{ ...glassStyle, background: 'rgba(255, 255, 255, 0.06)', padding: '1.25rem', border: '1px solid rgba(249, 115, 22, 0.2)', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', boxShadow: '0 4px 15px rgba(249, 115, 22, 0.05)' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.borderColor = 'rgba(249, 115, 22, 0.4)'; e.currentTarget.style.background = 'rgba(249, 115, 22, 0.08)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(249, 115, 22, 0.15)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.borderColor = 'rgba(249, 115, 22, 0.2)'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(249, 115, 22, 0.05)'; }}>
+                        <div style={{ padding: '10px', background: 'rgba(249, 115, 22, 0.15)', borderRadius: '12px', color: '#f97316' }}>
+                            <DollarSign size={22} />
+                        </div>
+                        <span style={{ color: 'white', fontWeight: 600, fontSize: '0.9rem' }}>Financeiro</span>
+                    </button>
+                </div>
+            </div>
+
             {/* KPI Cards Grid */}
-            <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-                {/* Cards mantidos iguais... */}
-                {/* Sales Today */}
-                <div style={cardStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <p style={{ color: '#9ca3af', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Vendas Hoje</p>
-                            <h3 style={{ fontSize: '2rem', fontWeight: 700, color: 'white', marginTop: '0.5rem' }}>
-                                R$ {stats.salesToday.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </h3>
+            <div style={{ marginBottom: "2.5rem" }}>
+                <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <TrendingUp size={16} />
+                    Resumo de Hoje
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem' }}>
+                    {/* Sales Today */}
+                    <div style={{ ...cardStyle, padding: '0.875rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ minWidth: 0 }}>
+                                <p style={{ color: '#9ca3af', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Vendas Hoje</p>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
+                                    R${stats.salesToday.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </h3>
+                            </div>
+                            <div style={{ padding: '5px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '6px', color: '#10b981', flexShrink: 0 }}>
+                                <TrendingUp size={14} />
+                            </div>
                         </div>
-                        <div style={{ padding: '10px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '12px', color: '#10b981' }}>
-                            <TrendingUp size={24} />
+                        <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '1px 4px', borderRadius: '3px', fontSize: '0.6rem', fontWeight: 700 }}>
+                                {stats.salesToday.count} vendas
+                            </span>
                         </div>
                     </div>
-                    <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
-                            {stats.salesToday.count} vendas
-                        </span>
-                        <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>registradas hoje</span>
-                    </div>
-                </div>
 
-                {/* New Clients */}
-                <div style={cardStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <p style={{ color: '#9ca3af', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Novos Clientes</p>
-                            <h3 style={{ fontSize: '2rem', fontWeight: 700, color: 'white', marginTop: '0.5rem' }}>
-                                {stats.newClientsMonth}
-                            </h3>
+                    {/* New Clients */}
+                    <div style={{ ...cardStyle, padding: '0.875rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <p style={{ color: '#9ca3af', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Novos Clientes</p>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
+                                    {stats.newClientsMonth}
+                                </h3>
+                            </div>
+                            <div style={{ padding: '5px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '6px', color: '#3b82f6', flexShrink: 0 }}>
+                                <Users size={14} />
+                            </div>
                         </div>
-                        <div style={{ padding: '10px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', color: '#3b82f6' }}>
-                            <Users size={24} />
-                        </div>
+                        <span style={{ marginTop: '0.4rem', color: '#6b7280', fontSize: '0.6rem' }}>Neste mês</span>
                     </div>
-                    <span style={{ marginTop: '1rem', color: '#6b7280', fontSize: '0.8rem' }}>Neste mês</span>
-                </div>
 
-                {/* Stock Items */}
-                <div style={cardStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <p style={{ color: '#9ca3af', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Produtos em Estoque</p>
-                            <h3 style={{ fontSize: '2rem', fontWeight: 700, color: 'white', marginTop: '0.5rem' }}>
-                                {stats.totalStockItems}
-                            </h3>
+                    {/* Stock Items */}
+                    <div style={{ ...cardStyle, padding: '0.875rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <p style={{ color: '#9ca3af', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Estoque</p>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginTop: '0.2rem' }}>
+                                    {stats.totalStockItems}
+                                </h3>
+                            </div>
+                            <div style={{ padding: '5px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '6px', color: '#f59e0b', flexShrink: 0 }}>
+                                <Package size={14} />
+                            </div>
                         </div>
-                        <div style={{ padding: '10px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '12px', color: '#f59e0b' }}>
-                            <Package size={24} />
-                        </div>
+                        <span style={{ marginTop: '0.4rem', color: '#6b7280', fontSize: '0.6rem' }}>Itens totais</span>
                     </div>
-                    <span style={{ marginTop: '1rem', color: '#6b7280', fontSize: '0.8rem' }}>Itens totais (incl. variações)</span>
-                </div>
 
-                {/* Financial Balance */}
-                <div style={cardStyle}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <p style={{ color: '#9ca3af', fontSize: '0.875rem', fontWeight: 600, textTransform: 'uppercase' }}>Saldo Atual</p>
-                            <h3 style={{ fontSize: '2rem', fontWeight: 700, color: stats.financialBalance >= 0 ? '#34d399' : '#ef4444', marginTop: '0.5rem' }}>
-                                R$ {stats.financialBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </h3>
+                    {/* Financial Balance */}
+                    <div style={{ ...cardStyle, padding: '0.875rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ minWidth: 0 }}>
+                                <p style={{ color: '#9ca3af', fontSize: '0.65rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.02em' }}>Saldo Atual</p>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: stats.financialBalance >= 0 ? '#34d399' : '#ef4444', marginTop: '0.2rem' }}>
+                                    R${stats.financialBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </h3>
+                            </div>
+                            <div style={{ padding: '5px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '6px', color: '#8b5cf6', flexShrink: 0 }}>
+                                <Wallet size={14} />
+                            </div>
                         </div>
-                        <div style={{ padding: '10px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '12px', color: '#8b5cf6' }}>
-                            <Wallet size={24} />
-                        </div>
+                        <span style={{ marginTop: '0.4rem', color: '#6b7280', fontSize: '0.6rem' }}>Caixa acumulado</span>
                     </div>
-                    <span style={{ marginTop: '1rem', color: '#6b7280', fontSize: '0.8rem' }}>Caixa acumulado</span>
                 </div>
             </div>
 
@@ -415,45 +468,8 @@ export default function DashboardPage() {
 
             {/* Dashboard Content Grid */}
             <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-                {/* Left Column: Quick Actions & Recent Sales */}
+                {/* Left Column: Recent Sales */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                    {/* Quick Actions */}
-                    <div style={{ ...glassStyle, padding: '1.5rem' }}>
-                        <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: 'white', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <TrendingUp size={18} color="#34d399" />
-                            Acesso Rápido
-                        </h3>
-                        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
-                            <button onClick={() => router.push('/dashboard/sales')} style={{ ...glassStyle, padding: '1.5rem', border: '1px solid rgba(52, 211, 153, 0.3)', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                <div style={{ padding: '12px', background: 'rgba(52, 211, 153, 0.2)', borderRadius: '50%', color: '#34d399' }}>
-                                    <ShoppingCart size={24} />
-                                </div>
-                                <span style={{ color: 'white', fontWeight: 600 }}>Nova Venda</span>
-                            </button>
-
-                            <button onClick={() => router.push('/dashboard/products/new')} style={{ ...glassStyle, padding: '1.5rem', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.2)', borderRadius: '50%', color: '#3b82f6' }}>
-                                    <Package size={24} />
-                                </div>
-                                <span style={{ color: 'white', fontWeight: 600 }}>Novo Produto</span>
-                            </button>
-
-                            <button onClick={() => router.push('/dashboard/clients')} style={{ ...glassStyle, padding: '1.5rem', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                <div style={{ padding: '12px', background: 'rgba(236, 72, 153, 0.2)', borderRadius: '50%', color: '#ec4899' }}>
-                                    <Users size={24} />
-                                </div>
-                                <span style={{ color: 'white', fontWeight: 600 }}>Novo Cliente</span>
-                            </button>
-
-                            <button onClick={() => router.push('/dashboard/financial')} style={{ ...glassStyle, padding: '1.5rem', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.02)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}>
-                                <div style={{ padding: '12px', background: 'rgba(249, 115, 22, 0.2)', borderRadius: '50%', color: '#f97316' }}>
-                                    <DollarSign size={24} />
-                                </div>
-                                <span style={{ color: 'white', fontWeight: 600 }}>Financeiro</span>
-                            </button>
-                        </div>
-                    </div>
 
                     {/* Recent Sales */}
                     <div style={{ ...glassStyle, padding: '1.5rem' }}>

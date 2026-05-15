@@ -21,10 +21,11 @@ function CheckoutSuccessContent() {
     // Support both new (PaymentIntent) and old (Session) flows
     const sessionId = searchParams.get('session_id');
     const paymentIntentId = searchParams.get('payment_intent');
+    const setupIntentId = searchParams.get('setup_intent');
     const emailContact = searchParams.get('email_contact');
 
     useEffect(() => {
-        if (!sessionId && !paymentIntentId) {
+        if (!sessionId && !paymentIntentId && !setupIntentId) {
             router.push('/');
             return;
         }
@@ -37,7 +38,8 @@ function CheckoutSuccessContent() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         sessionId,
-                        paymentIntentId
+                        paymentIntentId,
+                        setupIntentId
                     })
                 });
 
@@ -53,6 +55,16 @@ function CheckoutSuccessContent() {
                     }
                 }
 
+                // Track Purchase
+                if (typeof window !== "undefined" && (window as any).fbq) {
+                    (window as any).fbq('track', 'Purchase', {
+                        value: data.amount / 100, // Stripe values are in cents
+                        currency: 'BRL',
+                        content_name: data.metadata?.planName || 'Subscription',
+                        content_type: 'product'
+                    });
+                }
+
                 setSessionData(data);
             } catch (err: any) {
                 console.error(err);
@@ -64,7 +76,7 @@ function CheckoutSuccessContent() {
         };
 
         verifyPayment();
-    }, [sessionId, paymentIntentId, router]);
+    }, [sessionId, paymentIntentId, setupIntentId, router]);
 
     const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -100,7 +112,7 @@ function CheckoutSuccessContent() {
                     data: {
                         company_name: companyName,
                         stripe_customer_id: sessionData.customer,
-                        subscription_status: 'active', // Initial status
+                        subscription_status: 'trialing', // Trial behavior
                         subscription_plan: sessionData.metadata?.planName || 'monthly'
                     }
                 }
@@ -120,6 +132,15 @@ function CheckoutSuccessContent() {
             }
 
             alert("Conta criada com sucesso!");
+            
+            // Track CompleteRegistration
+            if (typeof window !== "undefined" && (window as any).fbq) {
+                (window as any).fbq('track', 'CompleteRegistration', {
+                    content_name: companyName,
+                    status: 'success'
+                });
+            }
+
             router.push("/dashboard"); // Direct to dashboard
 
         } catch (err: any) {

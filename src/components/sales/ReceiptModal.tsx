@@ -81,7 +81,7 @@ export function ReceiptModal({ isOpen, onClose, sale, companySettings }: Receipt
 
                     {/* Client & Seller */}
                     <div style={{ marginBottom: '1rem' }}>
-                        <p style={{ margin: 0 }}><strong>Cliente:</strong> {sale.clients?.name || 'Não Identificado'}</p>
+                        <p style={{ margin: 0 }}><strong>Cliente:</strong> {sale.clients?.name || sale.customer_name || 'Não Identificado'}</p>
                         {sale.clients?.document && <p style={{ margin: 0 }}>CPF/CNPJ: {sale.clients.document}</p>}
                         {sale.employees?.name && <p style={{ margin: '4px 0 0 0' }}><strong>Vendedor:</strong> {sale.employees.name}</p>}
                     </div>

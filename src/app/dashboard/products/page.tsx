@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
-import { Plus, Edit, Trash2, Search, Package } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Package, AlertTriangle, X, CheckCircle2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/context/AuthContext";
 
 interface Product {
     id: string;
@@ -23,21 +24,38 @@ export default function ProductsPage() {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const { user } = useAuth();
     const supabase = createClient();
     const router = useRouter();
+
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<{ id: string, name: string } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
     // Use permissions hook
     const { can_manage_products, loading: permissionsLoading } = usePermissions();
 
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        if (user) {
+            fetchProducts();
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (toast) {
+            const timer = setTimeout(() => setToast(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
 
     async function fetchProducts() {
         try {
+            if (!user) return;
             const { data, error } = await supabase
                 .from("products")
                 .select("*, product_variants(id, stock_quantity)")
+                .eq('user_id', user.id)
                 .eq('active', true) // Filter active products
                 .order("created_at", { ascending: false });
 
@@ -52,16 +70,23 @@ export default function ProductsPage() {
         }
     }
 
-    async function handleDelete(id: string) {
-        if (!confirm("Tem certeza que deseja excluir este produto?")) return;
+    async function handleDelete(id: string, name: string) {
+        setProductToDelete({ id, name });
+        setShowDeleteModal(true);
+    }
+
+    async function confirmDelete() {
+        if (!productToDelete) return;
+        setIsDeleting(true);
+        const { id } = productToDelete;
 
         try {
             // 1. Encontrar o produto para pegar a URL da imagem
-            const productToDelete = products.find(p => p.id === id);
+            const fullProduct = products.find(p => p.id === id);
 
             // 2. Se tiver imagem, deletar do Storage
-            if (productToDelete?.image_url) {
-                const fileName = productToDelete.image_url.split('/').pop();
+            if (fullProduct?.image_url) {
+                const fileName = fullProduct.image_url.split('/').pop();
                 if (fileName) {
                     await supabase.storage
                         .from("company-images")
@@ -78,15 +103,26 @@ export default function ProductsPage() {
 
             if (error) throw error;
 
-            setProducts(products.filter((p) => p.id !== id));
-        } catch (error) {
+            // 4. Feedback Visual Imediato (Otimista)
+            setProducts(prev => prev.filter(p => p.id !== id));
+            
+            setToast({ message: "Produto excluído com sucesso!", type: 'success' });
+            setShowDeleteModal(false);
+            setProductToDelete(null);
+            
+            // 5. Refresh em background para garantir sincronia
+            fetchProducts();
+        } catch (error: any) {
             console.error("Error deleting product:", error);
-            alert("Erro ao excluir produto. Verifique se existem pendências.");
+            const errorMsg = error.message || "Verifique se existem pendências.";
+            setToast({ message: `Erro ao excluir: ${errorMsg}`, type: 'error' });
+        } finally {
+            setIsDeleting(false);
         }
     }
 
     const filteredProducts = products.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (product.name || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Standardized Inline Styles
@@ -94,54 +130,86 @@ export default function ProductsPage() {
         background: 'rgba(255, 255, 255, 0.03)',
         border: '1px solid rgba(255, 255, 255, 0.1)',
         backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
         borderRadius: '16px',
     };
 
     return (
         <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem', animation: 'fadeIn 0.6s ease' }}>
             {/* Header Section */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem', flexWrap: 'wrap', gap: '1rem' }}>
+            {/* Header Section */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                    <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                         Produtos
                     </h1>
-                    <p style={{ color: '#9ca3af', marginTop: '0.5rem', fontSize: '1rem' }}>Gerencie seu catálogo de produtos e estoque.</p>
+                    <p style={{ color: '#9ca3af', marginTop: '0.25rem', fontSize: '0.95rem' }}>Gerencie seu catálogo de produtos e estoque.</p>
                 </div>
                 {can_manage_products && (
-                    <Link href="/dashboard/products/new">
-                        <Button style={{
-                            background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
-                            border: 'none',
-                            padding: '12px 24px',
-                            height: 'auto',
-                            fontSize: '1rem',
-                            fontWeight: 600,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            boxShadow: '0 4px 14px 0 rgba(0,0,0,0.3)'
-                        }}>
-                            <Plus size={20} />
-                            Novo Produto
-                        </Button>
-                    </Link>
+                    <div className="desktop-only">
+                        <Link href="/dashboard/products/new">
+                            <Button style={{
+                                background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))',
+                                border: 'none',
+                                padding: '12px 24px',
+                                height: 'auto',
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                boxShadow: '0 4px 14px 0 rgba(0,0,0,0.3)'
+                            }}>
+                                <Plus size={20} />
+                                Novo Produto
+                            </Button>
+                        </Link>
+                    </div>
                 )}
             </div>
 
+            {/* Mobile FAB */}
+            {can_manage_products && (
+                <div className="mobile-only" style={{ position: 'fixed', bottom: '2rem', right: '1.5rem', zIndex: 100 }}>
+                    <Link href="/dashboard/products/new">
+                        <button style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                            border: 'none',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px var(--color-primary-glow)',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                        }}
+                            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.9) rotate(-10deg)'}
+                            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1) rotate(0)'}
+                        >
+                            <Plus size={32} strokeWidth={2.5} />
+                        </button>
+                    </Link>
+                </div>
+            )}
+
             {/* Search Bar */}
-            <div style={{
+            {/* Search Bar */}
+            <div className="mobile-full-width" style={{
                 ...glassStyle,
                 marginBottom: '2rem',
-                padding: '1rem',
+                padding: '0.875rem 1.25rem',
                 display: 'flex',
                 alignItems: 'center',
                 width: '100%',
                 maxWidth: '500px'
             }}>
-                <Search style={{ color: '#9ca3af', marginRight: '1rem' }} size={20} />
+                <Search style={{ color: '#9ca3af', marginRight: '0.75rem' }} size={18} />
                 <input
                     type="text"
-                    placeholder="Buscar por nome, categoria ou código..."
+                    placeholder="Buscar produtos..."
                     style={{
                         background: 'transparent',
                         border: 'none',
@@ -202,13 +270,13 @@ export default function ProductsPage() {
                                                             )}
                                                         </div>
                                                         <div>
-                                                            <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'white' }}>{product.name}</div>
+                                                            <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'white' }}>{product.name || "Produto sem nome"}</div>
                                                             <div style={{ color: '#9ca3af', fontSize: '0.9rem' }}>{product.category || 'Geral'}</div>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ fontSize: '1.1rem', fontWeight: 600, color: '#34d399' }}>
-                                                    R$ {product.price.toFixed(2)}
+                                                    R$ {(product.price || 0).toFixed(2)}
                                                 </td>
                                                 <td className="responsive-table-cell" style={{ color: '#d1d5db' }}>
                                                     {totalStock} un
@@ -225,10 +293,13 @@ export default function ProductsPage() {
                                                                         <Edit size={18} />
                                                                     </Button>
                                                                 </Link>
-                                                                <Button
-                                                                    onClick={() => handleDelete(product.id)}
-                                                                    style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '8px', height: 'auto' }}
-                                                                >
+                                                                 <Button
+                                                                     onClick={() => {
+                                                                         console.log("Delete clicked for ID:", product.id, "Name:", product.name);
+                                                                         handleDelete(product.id, product.name || "Produto");
+                                                                     }}
+                                                                     style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '8px', height: 'auto' }}
+                                                                 >
                                                                     <Trash2 size={18} />
                                                                 </Button>
                                                             </>
@@ -252,42 +323,54 @@ export default function ProductsPage() {
                                     : product.stock_quantity || 0;
 
                                 return (
-                                    <div key={product.id} className="mobile-card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '1rem' }}>
+                                    <div key={product.id} className="mobile-card" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '1rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                                         <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                                             <div style={{
-                                                width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(0,0,0,0.3)', flexShrink: 0,
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                                width: '70px', height: '70px', borderRadius: '10px', overflow: 'hidden', background: 'rgba(0,0,0,0.2)', flexShrink: 0,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.05)'
                                             }}>
                                                 {product.image_url ? (
                                                     <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 ) : (
-                                                    <Package size={24} color="#6b7280" />
+                                                    <Package size={26} color="#4b5563" />
                                                 )}
                                             </div>
                                             <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                    <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'white', margin: 0, marginBottom: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.name}</h3>
-                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#34d399', background: 'rgba(16, 185, 129, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>Ativo</span>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                                                    <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'white', margin: 0, marginBottom: '0.2rem', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                                        {product.name || "Produto sem nome"}
+                                                    </h3>
+                                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#34d399', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase', flexShrink: 0 }}>Ativo</span>
                                                 </div>
-                                                <div style={{ color: '#9ca3af', fontSize: '0.85rem' }}>{product.category || 'Geral'}</div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
-                                                    <span style={{ fontWeight: 700, color: '#34d399', fontSize: '1.1rem' }}>R$ {product.price.toFixed(2)}</span>
-                                                    <span style={{ fontSize: '0.85rem', color: '#d1d5db' }}>{totalStock} un</span>
-                                                </div>
+                                                <div style={{ color: '#6b7280', fontSize: '0.8rem', fontWeight: 500 }}>{product.category || 'Sem categoria'}</div>
                                             </div>
                                         </div>
 
-                                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1rem', background: 'rgba(255,255,255,0.02)', padding: '0.75rem', borderRadius: '10px' }}>
+                                            <div>
+                                                <span style={{ fontSize: '0.7rem', color: '#9ca3af', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '2px' }}>Preço Unitário</span>
+                                                <span style={{ fontWeight: 800, color: '#34d399', fontSize: '1.25rem' }}>R$ {(product.price || 0).toFixed(2)}</span>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <span style={{ fontSize: '0.7rem', color: '#9ca3af', textTransform: 'uppercase', fontWeight: 600, display: 'block', marginBottom: '2px' }}>Estoque</span>
+                                                <span style={{ fontSize: '0.95rem', color: 'white', fontWeight: 700 }}>{totalStock} <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>un</span></span>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
                                             {can_manage_products && (
                                                 <>
                                                     <Link href={`/dashboard/products/${product.id}`} style={{ flex: 1 }}>
-                                                        <Button style={{ width: '100%', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '8px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                                                        <Button style={{ width: '100%', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.15)', padding: '10px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
                                                             <Edit size={16} /> Editar
                                                         </Button>
                                                     </Link>
                                                     <Button
-                                                        onClick={() => handleDelete(product.id)}
-                                                        style={{ flex: 1, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '8px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                                                        onClick={() => {
+                                                            console.log("Delete clicked (Mobile) for ID:", product.id, "Name:", product.name);
+                                                            handleDelete(product.id, product.name || "Produto");
+                                                        }}
+                                                        style={{ flex: 1, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.15)', padding: '10px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}
                                                     >
                                                         <Trash2 size={16} /> Excluir
                                                     </Button>
@@ -301,6 +384,97 @@ export default function ProductsPage() {
                     </div>
                 </div>
             )}
+
+            {/* Premium Toast Feedback */}
+            {toast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '2rem',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 2000,
+                    padding: '1rem 2rem',
+                    borderRadius: '12px',
+                    background: toast.type === 'success' ? 'rgba(16, 185, 129, 0.95)' : 'rgba(239, 68, 68, 0.95)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                    backdropFilter: 'blur(8px)',
+                    animation: 'slideUp 0.3s ease-out'
+                }}>
+                    {toast.type === 'success' ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />}
+                    <span style={{ fontWeight: 600 }}>{toast.message}</span>
+                </div>
+            )}
+
+            {/* Custom Premium Delete Modal */}
+            {showDeleteModal && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '1.5rem', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)'
+                }}>
+                    <div style={{
+                        ...glassStyle,
+                        maxWidth: '450px', width: '100%', padding: '2rem',
+                        background: 'rgba(20, 20, 25, 0.95)', border: '1px solid rgba(255,255,255,0.1)',
+                        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', position: 'relative'
+                    }}>
+                        <button 
+                            onClick={() => setShowDeleteModal(false)}
+                            style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'transparent', border: 'none', color: '#6b7280', cursor: 'pointer' }}
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div style={{
+                            width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', color: '#ef4444'
+                        }}>
+                            <Trash2 size={24} />
+                        </div>
+
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '0.75rem' }}>Excluir Produto?</h3>
+                        <p style={{ color: '#9ca3af', lineHeight: 1.5, marginBottom: '2rem' }}>
+                            Você está prestes a excluir <strong style={{color: 'white'}}>"{productToDelete?.name}"</strong>. 
+                            Isso removerá o produto do catálogo e limpará seu histórico de imagens. Esta ação requer que não haja vendas pendentes vinculadas.
+                        </p>
+
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                            <Button 
+                                variant="ghost" 
+                                onClick={() => setShowDeleteModal(false)}
+                                style={{ flex: 1, border: '1px solid rgba(255,255,255,0.05)', color: '#9ca3af' }}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button 
+                                onClick={confirmDelete}
+                                isLoading={isDeleting}
+                                style={{ flex: 1, background: '#ef4444' }}
+                            >
+                                Excluir Agora
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes slideUp {
+                    from { transform: translate(-50%, 100%); opacity: 0; }
+                    to { transform: translate(-50%, 0); opacity: 1; }
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 }

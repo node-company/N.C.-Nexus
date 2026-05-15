@@ -15,9 +15,21 @@ import {
     Wallet,
     X,
     Edit,
-    Trash2
+    Trash2,
+    Loader2
 } from "lucide-react";
-import { format } from "date-fns";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
+    Cell
+} from "recharts";
+import { format, subDays, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 // Types
@@ -37,11 +49,22 @@ interface Summary {
     balance: number;
 }
 
+interface ChartDataPoint {
+    name: string;
+    income: number;
+    expense: number;
+}
+
 export default function FinancialPage() {
     const supabase = createClient();
     const [loading, setLoading] = useState(true);
     const [records, setRecords] = useState<FinancialRecord[]>([]);
     const [summary, setSummary] = useState<Summary>({ revenue: 0, expenses: 0, balance: 0 });
+    const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+
+    // Filter State
+    const [startDate, setStartDate] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+    const [endDate, setEndDate] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
@@ -87,24 +110,50 @@ export default function FinancialPage() {
 
     useEffect(() => {
         fetchFinancials();
-    }, []);
+    }, [startDate, endDate]);
 
     const fetchFinancials = async () => {
+        // Validate dates before processing to prevent freezes during typing
+        if (!startDate || !endDate || startDate.length < 10 || endDate.length < 10) return;
+        
+        const s = parseISO(startDate);
+        const e = parseISO(endDate);
+        
+        if (isNaN(s.getTime()) || isNaN(e.getTime())) return;
+        if (s.getFullYear() < 2000 || e.getFullYear() < 2000) return;
+        if (s > e) return;
+
+        // Limit range to 2 years to prevent memory/performance issues
+        const dayDiff = (e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24);
+        if (dayDiff > 730) return;
+
         setLoading(true);
         try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // 1. Fetch Sales within Range
             const { data: sales, error: salesError } = await supabase
                 .from("sales")
                 .select("id, total_amount, created_at, status")
-                .eq("status", "completed");
+                .eq("user_id", user.id)
+                .eq("status", "completed")
+                .gte("created_at", `${startDate}T00:00:00`)
+                .lte("created_at", `${endDate}T23:59:59`);
 
             if (salesError) throw salesError;
 
+            // 2. Fetch Transactions within Range
             const { data: transactions, error: transError } = await supabase
                 .from("transactions")
-                .select("*");
+                .select("*")
+                .eq("user_id", user.id)
+                .gte("date", startDate)
+                .lte("date", endDate);
 
             if (transError) throw transError;
 
+            // Normalize Data
             const normalizedSales: FinancialRecord[] = (sales || []).map(s => ({
                 id: s.id,
                 description: `Venda #${s.id.slice(0, 8)}`,
@@ -115,7 +164,7 @@ export default function FinancialPage() {
                 category: 'Vendas'
             }));
 
-            const normalizedtransactions: FinancialRecord[] = (transactions || []).map(t => ({
+            const normalizedTransactions: FinancialRecord[] = (transactions || []).map(t => ({
                 id: t.id,
                 description: t.description,
                 amount: t.amount,
@@ -125,12 +174,13 @@ export default function FinancialPage() {
                 category: t.category
             }));
 
-            const allRecords = [...normalizedSales, ...normalizedtransactions].sort((a, b) =>
+            const allRecords = [...normalizedSales, ...normalizedTransactions].sort((a, b) =>
                 new Date(b.date).getTime() - new Date(a.date).getTime()
             );
 
             setRecords(allRecords);
 
+            // Calculate Summary
             const revenue = allRecords
                 .filter(r => r.type === 'INCOME')
                 .reduce((acc, curr) => acc + curr.amount, 0);
@@ -144,6 +194,39 @@ export default function FinancialPage() {
                 expenses,
                 balance: revenue - expenses
             });
+
+            // Generate Chart Data - Optimized O(N) approach
+            const days = eachDayOfInterval({
+                start: parseISO(startDate),
+                end: parseISO(endDate)
+            });
+
+            // Pre-calculate totals per day
+            const totalsByDay: Record<string, { income: number, expense: number }> = {};
+            allRecords.forEach(rec => {
+                const dayStr = rec.date.split('T')[0];
+                if (!totalsByDay[dayStr]) {
+                    totalsByDay[dayStr] = { income: 0, expense: 0 };
+                }
+                if (rec.type === 'INCOME') {
+                    totalsByDay[dayStr].income += rec.amount;
+                } else {
+                    totalsByDay[dayStr].expense += rec.amount;
+                }
+            });
+
+            const dailyData: ChartDataPoint[] = days.map(day => {
+                const dayStr = format(day, "yyyy-MM-dd");
+                const dayTotals = totalsByDay[dayStr] || { income: 0, expense: 0 };
+
+                return {
+                    name: format(day, "dd/MM"),
+                    income: dayTotals.income,
+                    expense: dayTotals.expense
+                };
+            });
+
+            setChartData(dailyData);
 
         } catch (error) {
             console.error("Error fetching financials:", error);
@@ -258,59 +341,228 @@ export default function FinancialPage() {
     };
 
     return (
-        <div style={{ maxWidth: '1200px', width: '100%', margin: '0 auto', paddingBottom: '5rem', animation: 'fadeIn 0.6s ease', overflowX: 'hidden' }}>
+        <div style={{ 
+            maxWidth: '1200px', 
+            width: '100%', 
+            margin: '0 auto', 
+            paddingBottom: '5rem', 
+            animation: 'fadeIn 0.6s ease', 
+            overflowX: 'hidden',
+            padding: '1rem',
+            // @ts-ignore
+            '--panel-padding': '1.5rem'
+        }}>
+            <style jsx>{`
+                @media (max-width: 768px) {
+                    div { --panel-padding: 1rem !important; }
+                    .mobile-full-width { width: 100% !important; margin-top: 1rem; }
+                    .chart-container { height: 250px !important; padding: var(--panel-padding) !important; }
+                    .desktop-table-view { display: none !important; }
+                    .mobile-card-view { display: block !important; }
+                    .date-filters-container { flex-direction: column !important; align-items: stretch !important; }
+                    .date-range-inputs { width: 100% !important; justify-content: space-between !important; }
+                }
+                @media (min-width: 769px) {
+                    .desktop-table-view { display: block !important; }
+                    .mobile-card-view { display: none !important; }
+                }
+            `}</style>
+
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ maxWidth: '100%' }}>
-                    <h1 style={{ fontSize: '2.25rem', fontWeight: 800, background: 'linear-gradient(to right, #34d399, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, wordBreak: 'break-word', lineHeight: 1.2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ flex: '1', minWidth: '250px' }}>
+                    <h1 className="responsive-title" style={{ fontWeight: 800, background: 'linear-gradient(to right, #34d399, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, lineHeight: 1.1 }}>
                         Financeiro
                     </h1>
-                    <p style={{ color: '#9ca3af', marginTop: '0.25rem' }}>Fluxo de Caixa e Resultados</p>
+                    <p style={{ color: '#9ca3af', marginTop: '0.25rem', fontSize: '1rem' }}>Fluxo de Caixa e Resultados</p>
                 </div>
                 <Button
                     onClick={() => handleOpenModal()}
-                    style={{ background: '#059669', color: 'white', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(5, 150, 105, 0.2)' }}
+                    className="mobile-full-width"
+                    style={{ background: 'linear-gradient(90deg, #10b981, #059669)', color: 'white', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 24px', borderRadius: '12px', height: '48px', border: 'none' }}
                 >
                     <Plus size={20} /> Nova Movimentação
                 </Button>
             </div>
 
-            {/* KPI Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100%, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-                {/* Revenue */}
-                <div style={{ ...glassStyle, padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, right: 0, padding: '1rem', opacity: 0.1 }}>
-                        <TrendingUp size={100} style={{ color: '#10b981' }} />
+            {/* Filters and Search Area */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1.5rem',
+                marginBottom: '2rem',
+                flexWrap: 'wrap'
+            }}>
+                <div className="date-filters-container" style={{
+                    ...glassStyle,
+                    padding: '0.75rem 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    flex: 1,
+                    minWidth: 'auto',
+                    overflow: 'hidden'
+                }}>
+                    <Calendar size={18} style={{ color: '#9ca3af', flexShrink: 0 }} />
+                    <div className="date-range-inputs" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
+                        <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'white',
+                                outline: 'none',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                width: '110px'
+                            }}
+                        />
+                        <span style={{ color: '#4b5563', fontSize: '0.75rem' }}>até</span>
+                        <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'white',
+                                outline: 'none',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                width: '110px'
+                            }}
+                        />
                     </div>
-                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Receitas Totais</p>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'white', marginTop: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                        <span style={{ color: '#34d399' }}>R$</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                    <Button
+                        onClick={() => {
+                            setStartDate(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+                            setEndDate(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+                        }}
+                        variant="ghost"
+                        style={{ fontSize: '0.875rem' }}
+                    >
+                        Este Mês
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setStartDate(format(subDays(new Date(), 30), "yyyy-MM-dd"));
+                            setEndDate(format(new Date(), "yyyy-MM-dd"));
+                        }}
+                        variant="ghost"
+                        style={{ fontSize: '0.875rem' }}
+                    >
+                        Últimos 30 dias
+                    </Button>
+                </div>
+            </div>
+
+            {/* KPI Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '2.5rem' }}>
+                {/* Revenue */}
+                <div style={{ ...glassStyle, padding: 'var(--panel-padding)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.05 }}>
+                        <TrendingUp size={120} style={{ color: '#10b981' }} />
+                    </div>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>Receitas Totais</p>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span style={{ color: '#34d399', fontSize: '1.25rem' }}>R$</span>
                         {summary.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </h2>
                 </div>
 
                 {/* Expenses */}
-                <div style={{ ...glassStyle, padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, right: 0, padding: '1rem', opacity: 0.1 }}>
-                        <TrendingDown size={100} style={{ color: '#ef4444' }} />
+                <div style={{ ...glassStyle, padding: 'var(--panel-padding)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.05 }}>
+                        <TrendingDown size={120} style={{ color: '#ef4444' }} />
                     </div>
-                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Despesas</p>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'white', marginTop: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                        <span style={{ color: '#f87171' }}>R$</span>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>Despesas</p>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                        <span style={{ color: '#f87171', fontSize: '1.25rem' }}>R$</span>
                         {summary.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </h2>
                 </div>
 
                 {/* Balance */}
-                <div style={{ ...glassStyle, padding: '1.5rem', position: 'relative', overflow: 'hidden', border: summary.balance >= 0 ? '1px solid rgba(34, 211, 238, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)' }}>
-                    <div style={{ position: 'absolute', top: 0, right: 0, padding: '1rem', opacity: 0.1 }}>
-                        <Wallet size={100} style={{ color: summary.balance >= 0 ? '#22d3ee' : '#ef4444' }} />
+                <div style={{ ...glassStyle, padding: 'var(--panel-padding)', position: 'relative', overflow: 'hidden', border: summary.balance >= 0 ? '1px solid rgba(34, 211, 238, 0.2)' : '1px solid rgba(239, 68, 68, 0.2)' }}>
+                    <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.05 }}>
+                        <Wallet size={120} style={{ color: summary.balance >= 0 ? '#22d3ee' : '#ef4444' }} />
                     </div>
-                    <p style={{ fontSize: '0.875rem', fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Saldo Líquido</p>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 700, marginTop: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '4px', color: summary.balance >= 0 ? '#22d3ee' : '#f87171' }}>
-                        <span>R$</span>
+                    <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.75rem' }}>Saldo Líquido</p>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, display: 'flex', alignItems: 'baseline', gap: '4px', color: summary.balance >= 0 ? '#22d3ee' : '#f87171' }}>
+                        <span style={{ fontSize: '1.25rem' }}>R$</span>
                         {summary.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </h2>
+                </div>
+            </div>
+
+            {/* Financial Charts */}
+            <div className="chart-container" style={{ ...glassStyle, padding: '2rem', marginBottom: '2rem', minHeight: '400px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div>
+                        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', margin: 0 }}>Fluxo de Caixa</h3>
+                        <p style={{ color: '#9ca3af', fontSize: '0.875rem', marginTop: '0.25rem' }}>Comparativo diário de Entradas e Saídas</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#34d399' }}></div>
+                            <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 600 }}>ENTRADAS</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#f87171' }}></div>
+                            <span style={{ fontSize: '0.75rem', color: '#9ca3af', fontWeight: 600 }}>SAÍDAS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ width: '100%', height: 300 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                            <XAxis
+                                dataKey="name"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                                dy={10}
+                            />
+                            <YAxis
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#6b7280', fontSize: 12 }}
+                                tickFormatter={(value) => `R$ ${value}`}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    background: 'rgba(15, 23, 42, 0.9)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: '8px',
+                                    backdropFilter: 'blur(8px)'
+                                }}
+                                itemStyle={{ fontSize: '0.875rem' }}
+                                cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                            />
+                            <Bar
+                                dataKey="income"
+                                name="Entradas"
+                                fill="#34d399"
+                                radius={[4, 4, 0, 0]}
+                                barSize={20}
+                            />
+                            <Bar
+                                dataKey="expense"
+                                name="Saídas"
+                                fill="#f87171"
+                                radius={[4, 4, 0, 0]}
+                                barSize={20}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 
@@ -402,54 +654,63 @@ export default function FinancialPage() {
 
                         {/* Mobile Card View */}
                         <div className="mobile-card-view">
-                            <div style={{ padding: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {records.map((rec) => (
-                                    <div key={rec.id} className="mobile-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '1rem' }}>
+                                    <div key={rec.id} className="mobile-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.05)', borderRadius: '16px' }}>
 
-                                        {/* Icon */}
-                                        <div style={{
-                                            padding: '12px', borderRadius: '12px',
-                                            background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                                            color: rec.type === 'INCOME' ? '#10b981' : '#ef4444',
-                                            display: 'inline-flex', marginBottom: '0.5rem',
-                                            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
-                                        }}>
-                                            {rec.source === 'SALE' ? <ShoppingBag size={24} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={24} /> : <ArrowDownCircle size={24} />)}
-                                        </div>
-
-                                        {/* Main Info */}
-                                        <div style={{ width: '100%' }}>
-                                            <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'white', marginBottom: '0.5rem', wordBreak: 'break-word', lineHeight: 1.3 }}>
-                                                {rec.description}
-                                            </h3>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.85rem', color: '#9ca3af' }}>
-                                                <span style={{ textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>{rec.category || 'Geral'}</span>
-                                                <span>{format(new Date(rec.date), "dd 'de' MMMM, yyyy", { locale: ptBR })}</span>
+                                        {/* Header of Card */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                                                <div style={{
+                                                    padding: '10px', borderRadius: '12px',
+                                                    background: rec.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                                    color: rec.type === 'INCOME' ? '#10b981' : '#ef4444'
+                                                }}>
+                                                    {rec.source === 'SALE' ? <ShoppingBag size={20} /> : (rec.type === 'INCOME' ? <ArrowUpCircle size={20} /> : <ArrowDownCircle size={20} />)}
+                                                </div>
+                                                <div>
+                                                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'white', margin: 0 }}>{rec.description}</h3>
+                                                    <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>{rec.source === 'SALE' ? 'Venda Automática' : 'Manual'}</span>
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <span style={{ fontSize: '0.75rem', color: '#9ca3af', display: 'block' }}>{format(new Date(rec.date), "dd/MM/yy", { locale: ptBR })}</span>
+                                                <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'rgba(255,255,255,0.05)', fontSize: '0.65rem', color: '#d1d5db', border: '1px solid rgba(255,255,255,0.05)', textTransform: 'uppercase' }}>
+                                                    {rec.category || 'Geral'}
+                                                </span>
                                             </div>
                                         </div>
 
-                                        {/* Amount */}
-                                        <div style={{ margin: '0.5rem 0', width: '100%', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <span style={{ fontSize: '0.75rem', color: '#6b7280', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>Valor</span>
-                                            <span style={{ fontSize: '1.75rem', fontWeight: 800, color: rec.type === 'INCOME' ? '#34d399' : '#f87171' }}>
-                                                {rec.type === 'INCOME' ? '+' : '-'} {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        {/* Amount Section */}
+                                        <div style={{
+                                            padding: '0.75rem 1rem',
+                                            background: 'rgba(0,0,0,0.2)',
+                                            borderRadius: '12px',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            border: '1px solid rgba(255,255,255,0.03)'
+                                        }}>
+                                            <span style={{ fontSize: '0.7rem', color: '#6b7280', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>Valor</span>
+                                            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: rec.type === 'INCOME' ? '#34d399' : '#f87171', fontFamily: 'monospace' }}>
+                                                {rec.type === 'INCOME' ? '+' : '-'} R$ {rec.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                             </span>
                                         </div>
 
                                         {/* Actions */}
                                         {rec.source === 'MANUAL' && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                                                 <button
                                                     onClick={() => handleOpenModal(rec)}
-                                                    style={{ width: '100%', padding: '14px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
                                                 >
-                                                    <Edit size={18} /> Editar Movimentação
+                                                    <Edit size={16} /> Editar
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteClick(rec.id)}
-                                                    style={{ width: '100%', padding: '14px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, fontSize: '1rem' }}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', borderRadius: '8px', fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer' }}
                                                 >
-                                                    <Trash2 size={18} /> Excluir Registro
+                                                    <Trash2 size={16} /> Excluir
                                                 </button>
                                             </div>
                                         )}
@@ -516,40 +777,45 @@ export default function FinancialPage() {
                 }}>
                     <div style={{
                         ...glassStyle,
-                        width: '100%', maxWidth: '400px', padding: '1.5rem', position: 'relative',
-                        background: 'rgba(20, 20, 20, 0.95)'
+                        width: '100%', maxWidth: '450px', padding: '1.75rem', position: 'relative',
+                        background: '#0f172a', border: '1px solid rgba(255,255,255,0.1)',
+                        maxHeight: '90vh', overflowY: 'auto'
                     }}>
-                        <button onClick={() => setModalOpen(false)} style={{ position: 'absolute', right: '1rem', top: '1rem', background: 'transparent', border: 'none', color: 'gray', cursor: 'pointer' }}>
-                            <X size={20} />
+                        <button onClick={() => setModalOpen(false)} style={{ position: 'absolute', right: '1.25rem', top: '1.25rem', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'gray', cursor: 'pointer', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <X size={18} />
                         </button>
 
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '1.5rem' }}>
+                        <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'white', marginBottom: '1.5rem', background: 'linear-gradient(to right, white, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                             {editingId ? "Editar Movimentação" : "Nova Movimentação"}
                         </h2>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {/* Tipo */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <label style={{
-                                    cursor: 'pointer', border: newTransaction.type === 'INCOME' ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid rgba(255,255,255,0.1)',
-                                    background: newTransaction.type === 'INCOME' ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
-                                    padding: '0.75rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                                    color: newTransaction.type === 'INCOME' ? '#34d399' : '#6b7280'
-                                }}>
-                                    <input type="radio" name="type" className="hidden" onClick={() => setNewTransaction({ ...newTransaction, type: 'INCOME' })} style={{ display: 'none' }} />
-                                    <ArrowUpCircle size={24} />
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>Receita Extra</span>
-                                </label>
-                                <label style={{
-                                    cursor: 'pointer', border: newTransaction.type === 'EXPENSE' ? '1px solid rgba(239, 68, 68, 0.5)' : '1px solid rgba(255,255,255,0.1)',
-                                    background: newTransaction.type === 'EXPENSE' ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                                    padding: '0.75rem', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-                                    color: newTransaction.type === 'EXPENSE' ? '#f87171' : '#6b7280'
-                                }}>
-                                    <input type="radio" name="type" className="hidden" onClick={() => setNewTransaction({ ...newTransaction, type: 'EXPENSE' })} style={{ display: 'none' }} />
-                                    <ArrowDownCircle size={24} />
-                                    <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>Despesa</span>
-                                </label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                            {/* Tipo Toggle */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '12px' }}>
+                                <button 
+                                    onClick={() => setNewTransaction({ ...newTransaction, type: 'INCOME' })}
+                                    style={{
+                                        padding: '0.75rem', borderRadius: '10px', border: 'none',
+                                        background: newTransaction.type === 'INCOME' ? '#059669' : 'transparent',
+                                        color: newTransaction.type === 'INCOME' ? 'white' : '#6b7280',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.2s', cursor: 'pointer'
+                                    }}
+                                >
+                                    <ArrowUpCircle size={18} /> Receita
+                                </button>
+                                <button 
+                                    onClick={() => setNewTransaction({ ...newTransaction, type: 'EXPENSE' })}
+                                    style={{
+                                        padding: '0.75rem', borderRadius: '10px', border: 'none',
+                                        background: newTransaction.type === 'EXPENSE' ? '#dc2626' : 'transparent',
+                                        color: newTransaction.type === 'EXPENSE' ? 'white' : '#6b7280',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                        fontWeight: 700, fontSize: '0.875rem', transition: 'all 0.2s', cursor: 'pointer'
+                                    }}
+                                >
+                                    <ArrowDownCircle size={18} /> Despesa
+                                </button>
                             </div>
 
                             <div>
@@ -557,7 +823,7 @@ export default function FinancialPage() {
                                 <input
                                     type="text"
                                     placeholder="Ex: Conta de Luz, Aluguel..."
-                                    style={inputStyle}
+                                    style={{ ...inputStyle, padding: '14px' }}
                                     value={newTransaction.description}
                                     onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
                                 />
@@ -569,8 +835,9 @@ export default function FinancialPage() {
                                     <input
                                         type="number"
                                         step="0.01"
+                                        inputMode="decimal"
                                         placeholder="0.00"
-                                        style={{ ...inputStyle, fontFamily: 'monospace' }}
+                                        style={{ ...inputStyle, fontFamily: 'monospace', padding: '14px' }}
                                         value={newTransaction.amount}
                                         onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
                                     />
@@ -579,7 +846,7 @@ export default function FinancialPage() {
                                     <label style={labelStyle}>Data</label>
                                     <input
                                         type="date"
-                                        style={inputStyle}
+                                        style={{ ...inputStyle, padding: '14px' }}
                                         value={newTransaction.date}
                                         onChange={(e) => setNewTransaction({ ...newTransaction, date: e.target.value })}
                                     />
@@ -589,34 +856,31 @@ export default function FinancialPage() {
                             <div>
                                 <label style={labelStyle}>Categoria</label>
                                 <select
-                                    style={{ ...inputStyle, cursor: 'pointer' }}
+                                    style={{ ...inputStyle, cursor: 'pointer', padding: '14px', color: 'white' }}
                                     value={newTransaction.category}
                                     onChange={(e) => setNewTransaction({ ...newTransaction, category: e.target.value })}
                                 >
-                                    <option style={{ background: '#111827' }}>Operacional</option>
-                                    <option style={{ background: '#111827' }}>Marketing</option>
-                                    <option style={{ background: '#111827' }}>Aluguel</option>
-                                    <option style={{ background: '#111827' }}>Salários</option>
-                                    <option style={{ background: '#111827' }}>Impostos</option>
-                                    <option style={{ background: '#111827' }}>Aporte</option>
-                                    <option style={{ background: '#111827' }}>Outros</option>
+                                    <option value="Operacional" style={{ background: '#0f172a', color: 'white' }}>Operacional</option>
+                                    <option value="Pessoal" style={{ background: '#0f172a', color: 'white' }}>Pessoal</option>
+                                    <option value="Vendas" style={{ background: '#0f172a', color: 'white' }}>Vendas</option>
+                                    <option value="Materais" style={{ background: '#0f172a', color: 'white' }}>Materiais</option>
+                                    <option value="Outros" style={{ background: '#0f172a', color: 'white' }}>Outros</option>
                                 </select>
                             </div>
 
-                            <Button
+                            <Button 
                                 onClick={handleSaveTransaction}
                                 disabled={saving}
-                                style={{
-                                    width: '100%',
-                                    marginTop: '1rem',
-                                    background: '#059669',
-                                    color: 'white',
-                                    fontWeight: 'bold',
-                                    padding: '12px',
-                                    borderRadius: '8px'
+                                style={{ 
+                                    marginTop: '0.5rem', 
+                                    height: '52px', 
+                                    background: newTransaction.type === 'INCOME' ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #ef4444, #dc2626)',
+                                    borderRadius: '12px',
+                                    fontWeight: 800,
+                                    fontSize: '1rem'
                                 }}
                             >
-                                {saving ? "Salvando..." : (editingId ? "Atualizar Lançamento" : "Confirmar Lançamento")}
+                                {saving ? <Loader2 className="animate-spin" /> : (editingId ? "Atualizar Registro" : "Salvar Lançamento")}
                             </Button>
                         </div>
                     </div>
