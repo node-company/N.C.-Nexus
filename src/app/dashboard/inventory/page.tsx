@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Search, ArrowUpCircle, ArrowDownCircle, History, X, Plus, Trash } from "lucide-react";
+import { Search, ArrowUpCircle, ArrowDownCircle, History, X, Plus, Trash, Copy } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -233,6 +233,10 @@ export default function InventoryPage() {
 
     const removePurchaseItem = (id: string) => {
         setPurchaseItems(purchaseItems.filter(item => item.id !== id));
+    };
+
+    const duplicatePurchaseItem = (item: PurchaseItem) => {
+        setPurchaseItems([...purchaseItems, { ...item, id: Date.now().toString() + Math.random() }]);
     };
 
     const handleSavePurchase = async () => {
@@ -833,13 +837,23 @@ export default function InventoryPage() {
                                         />
                                     </div>
 
-                                    <Button
-                                        onClick={() => removePurchaseItem(item.id)}
-                                        style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', padding: '10px', height: '100%', display: 'flex', alignItems: 'center', justifySelf: 'start' }}
-                                        disabled={purchaseItems.length === 1}
-                                    >
-                                        <Trash size={18} />
-                                    </Button>
+                                    <div style={{ display: 'flex', gap: '0.5rem', height: '100%', alignItems: 'center', justifySelf: 'start' }}>
+                                        <Button
+                                            onClick={() => duplicatePurchaseItem(item)}
+                                            style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.2)', borderRadius: '8px', padding: '10px', height: '100%', display: 'flex', alignItems: 'center' }}
+                                            title="Duplicar Item"
+                                        >
+                                            <Copy size={18} />
+                                        </Button>
+                                        <Button
+                                            onClick={() => removePurchaseItem(item.id)}
+                                            style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', padding: '10px', height: '100%', display: 'flex', alignItems: 'center' }}
+                                            disabled={purchaseItems.length === 1}
+                                            title="Remover Item"
+                                        >
+                                            <Trash size={18} />
+                                        </Button>
+                                    </div>
                                 </div>
                             ))}
 
